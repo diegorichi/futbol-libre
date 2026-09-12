@@ -15,6 +15,7 @@ from scraping.site_scraper import extraer_eventos_de_sitios
 from scraping.stream_extractor import StreamExtractionPool
 from server.services.channel_service import ChannelService
 from progress import ProgressReporter
+from event_time import hora_mas_cercana
 
 ENV_FILE = os.getenv("ENV_FILE", ".env")
 load_dotenv(ENV_FILE)
@@ -117,34 +118,23 @@ def sanitizar_nombre(texto):
     # 4. Limpiar los bordes
     return texto.strip()
 
-def _hora_mas_cercana(hora_str, ahora=None):
-    """Asocia una hora de agenda al día más cercano al momento actual."""
-    ahora = ahora or datetime.now()
-    hora_obj = datetime.strptime(hora_str, "%H:%M").replace(
-        year=ahora.year, month=ahora.month, day=ahora.day
-    )
-    diferencia = hora_obj - ahora
-    if diferencia > timedelta(hours=12):
-        hora_obj -= timedelta(days=1)
-    elif diferencia < timedelta(hours=-12):
-        hora_obj += timedelta(days=1)
-    return hora_obj
+_hora_mas_cercana = hora_mas_cercana
 
 
-def es_proximo(hora_str):
+def es_proximo(hora_str, ahora=None):
     try:
-        ahora = datetime.now()
+        ahora = ahora or datetime.now()
         hora_obj = _hora_mas_cercana(hora_str, ahora)
         # Eventos activos: desde hace 2.5 horas hasta 30 mins en el futuro
         return (ahora + timedelta(minutes=30)) <= hora_obj or hora_str == "23:59"
     except:
         return False
 
-def es_activo(hora_str):
+def es_activo(hora_str, ahora=None):
     try:
-        ahora = datetime.now()
+        ahora = ahora or datetime.now()
         hora_obj = _hora_mas_cercana(hora_str, ahora)
-        inicio = ahora - timedelta(hours=3, minutes=30)
+        inicio = ahora - timedelta(hours=2, minutes=30)
         fin = ahora + timedelta(minutes=30)
         # Eventos activos: desde hace 2.5 horas hasta 30 mins en el futuro
         return inicio <= hora_obj <= fin
@@ -169,14 +159,7 @@ def generar_xmltv(eventos_mapeados, xml_path):
     for ev in eventos_mapeados:
         try:
             # Parseamos la hora que viene del scraper (HH:MM)
-            hora_evento = datetime.strptime(ev['hora_real'], "%H:%M").replace(
-                year=ahora.year, month=ahora.month, day=ahora.day
-            )
-            
-            # Si la hora del evento es mayor a la actual + 12hs, 
-            # probablemente sea un error de casteo de día (ayer/mañana)
-            if hora_evento > ahora + timedelta(hours=12):
-                hora_evento -= timedelta(days=1)
+            hora_evento = _hora_mas_cercana(ev['hora_real'], ahora)
                 
             inicio_xml = hora_evento.strftime("%Y%m%d%H%M%S") + " -0300"
             # Timeout de 3 horas desde el inicio del evento
@@ -214,7 +197,7 @@ def _clave_evento_salida(nombre, hora):
     return nombre, hora
 
 
-def _canales_existentes():
+def _canales_existentes(ahora=None):
     """Lee la grilla publicada para poder hacer upsert en modo extra."""
     if not M3U_FILE or not Path(M3U_FILE).exists():
         return []
@@ -222,14 +205,14 @@ def _canales_existentes():
     if not Path(xml_path).exists():
         return []
     try:
-        return ChannelService(xml_path, M3U_FILE).list_channels()
+        return ChannelService(xml_path, M3U_FILE, now=ahora).list_channels()
     except (OSError, ValueError):
         return []
 
 
-def _fusionar_sitio_extra(en_vivo, proximos):
+def _fusionar_sitio_extra(en_vivo, proximos, ahora=None):
     """Conserva la grilla anterior y agrega/reemplaza lo descubierto."""
-    existentes = _canales_existentes()
+    existentes = _canales_existentes(ahora)
     if not existentes:
         return en_vivo, proximos
 
@@ -246,6 +229,8 @@ def _fusionar_sitio_extra(en_vivo, proximos):
     for canal in existentes:
         clave = _clave_evento_salida(canal.nombre, canal.hora)
         if canal.proximamente:
+            if not (es_activo(canal.hora, ahora) or es_proximo(canal.hora, ahora)):
+                continue
             if clave not in nuevas_activas:
                 proximos.append({
                     "nombre": canal.nombre,
@@ -255,6 +240,8 @@ def _fusionar_sitio_extra(en_vivo, proximos):
                 })
             continue
 
+        if not es_activo(canal.hora, ahora):
+            continue
         if not canal.link or canal.link == SINTEL_URL or canal.link in urls_activas:
             continue
         if clave in nuevas_activas:
@@ -292,7 +279,16 @@ def _fusionar_sitio_extra(en_vivo, proximos):
     return en_vivo, unicos_proximos
 
 
-def _fusionar_eventos_tv(eventos_tv, events_path):
+def _hora_evento_catalogo(evento):
+    titulo = evento.get("title", "") or ""
+    match = re.search(r"\[(\d{2}:\d{2})\]", titulo)
+    if match:
+        return match.group(1)
+    match = re.search(r"T(\d{2}:\d{2})", evento.get("starts_at", "") or "")
+    return match.group(1) if match else None
+
+
+def _fusionar_eventos_tv(eventos_tv, events_path, ahora=None):
     """Conserva el catálogo JSON anterior y reemplaza claves redescubiertas."""
     if not events_path or not Path(events_path).exists():
         return eventos_tv
@@ -309,6 +305,9 @@ def _fusionar_eventos_tv(eventos_tv, events_path):
     fusionados = []
     claves = set()
     for evento in anteriores:
+        hora = _hora_evento_catalogo(evento)
+        if not hora or not (es_activo(hora, ahora) or es_proximo(hora, ahora)):
+            continue
         clave = _clave_evento_salida(evento.get("title"), evento.get("starts_at", "")[:16])
         reemplazo = nuevos_por_clave.pop(clave, None)
         elegido = reemplazo or evento
@@ -357,13 +356,13 @@ def extraer_todo_futbol_libre(extra_only=False):
                 print(f"Fallo inesperado en {url}: {type(error).__name__}: {error}")
 
         if not urls_validas:
-            print("Ningún dominio de la lista está operativo. Revisar el .env.")
+            print("Ningún dominio de la lista está operativo. Revisar el integracion con searng")
             progress.fail("Ningún dominio de la lista está operativo.")
             driver.quit()
             exit(1)
         
-        print("Esperando unos segundos para asentar la carga de la página...")
-        time.sleep(5)
+        print("Esperando unos segundos...")
+        time.sleep(2)
         
         progress.update("sites", 0, len(urls_validas), "Parseando sitios...")
         eventos_raw, sitios_ok, errores_sitios = extraer_eventos_de_sitios(
@@ -452,11 +451,11 @@ def extraer_todo_futbol_libre(extra_only=False):
 
         # Contrato estructurado para la app: conserva todas las fuentes del
         # mismo evento. El M3U legacy sigue siendo de una fuente por slot.
-        ahora = datetime.now()
-        eventos_tv = []
+            ahora = datetime.now()
+            eventos_tv = []
         for ev in eventos_raw:
             hora = ev.get("hora", "23:59")
-            if not es_activo(hora) and not es_proximo(hora):
+            if not es_activo(hora, ahora) and not es_proximo(hora, ahora):
                 continue
             fuentes = []
             for source_index, opt in enumerate(ev.get("opciones", []), start=1):
@@ -470,9 +469,7 @@ def extraer_todo_futbol_libre(extra_only=False):
                     "user_agent": USER_AGENT,
                 })
             try:
-                start = datetime.strptime(hora, "%H:%M").replace(
-                    year=ahora.year, month=ahora.month, day=ahora.day
-                )
+                start = _hora_mas_cercana(hora, ahora)
                 starts_at = start.isoformat()
             except ValueError:
                 starts_at = ahora.isoformat()
@@ -480,7 +477,7 @@ def extraer_todo_futbol_libre(extra_only=False):
                 "id": re.sub(r"[^a-z0-9]+", "-", ev.get("nombre", "evento").lower()).strip("-") + f"-{hora.replace(':', '')}",
                 "title": ev.get("nombre", "Evento"),
                 "starts_at": starts_at,
-                "status": "available" if fuentes else ("upcoming" if es_proximo(hora) else "unavailable"),
+                "status": "available" if fuentes else ("upcoming" if es_proximo(hora, ahora) else "unavailable"),
                 "logo": ev.get("logo", ""),
                 "sources": fuentes,
             })
