@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from server.models.channel import Channel, Event, EventSource
+from event_time import hora_mas_cercana
 
 
 class ChannelService:
@@ -13,10 +14,11 @@ class ChannelService:
         "demo.unified-streaming.com/k8s/live/scte35.isml",
     )
 
-    def __init__(self, xml_path, m3u_path, events_path=None):
+    def __init__(self, xml_path, m3u_path, events_path=None, now=None):
         self.xml_path = xml_path
         self.m3u_path = m3u_path
         self.events_path = events_path
+        self.now = now or datetime.now()
 
     def list_channels(self):
         entries = self._read_m3u_entries()
@@ -50,7 +52,10 @@ class ChannelService:
                 logo=(programme.find("icon").get("src") if programme.find("icon") is not None else entries.get(channel_id, {}).get("logo", "")),
                 proximamente=proximamente,
             ))
-        return sorted(result, key=lambda item: item.hora)
+        return sorted(result, key=lambda item: self._nearest_time(item.hora))
+
+    def _nearest_time(self, value):
+        return hora_mas_cercana(value, self.now)
 
     def list_events(self):
         """Return the current dynamic event catalog for TV/mobile clients.

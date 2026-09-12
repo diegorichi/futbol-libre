@@ -130,6 +130,7 @@ https://one.test/real.m3u8
 
     def test_extra_site_upsert_preserves_existing_grid(self):
         import futbol
+        from datetime import datetime
 
         with tempfile.TemporaryDirectory() as directory:
             xml_path = Path(directory) / "events.xml"
@@ -137,12 +138,15 @@ https://one.test/real.m3u8
             xml_path.write_text("""<?xml version=\"1.0\"?><tv>
               <programme start=\"20260909200000 -0300\" channel=\"E01\"><title>[20:00] MLS: Partido anterior ; ESPN</title></programme>
               <programme start=\"20260909210000 -0300\" channel=\"E02\"><title>PROXIMAMENTE: [21:00] AEW: Lucha libre ; TNT</title></programme>
+              <programme start=\"20260909121500 -0300\" channel=\"E03\"><title>[12:15] MLS: Partido vencido ; ESPN</title></programme>
             </tv>""", encoding="utf-8")
             m3u_path.write_text("""#EXTM3U
 #EXTINF:-1 tvg-id=\"E01\",E01
 https://old.test/partido.m3u8
 #EXTINF:-1 tvg-id=\"E02\",E02
 https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8
+#EXTINF:-1 tvg-id=\"E03\",E03
+https://old.test/vencido.m3u8
 """, encoding="utf-8")
 
             with patch.object(futbol, "M3U_FILE", str(m3u_path)), \
@@ -150,6 +154,7 @@ https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8
                 active, upcoming = futbol._fusionar_sitio_extra(
                     [{"nombre": "MLS: Chicago Fire vs Inter Miami", "hora": "20:30", "canal": "Apple TV", "logo": "", "url": "https://new.test/mls.m3u8"}],
                     [],
+                    ahora=datetime(2026, 9, 9, 20, 45),
                 )
 
             self.assertEqual(
