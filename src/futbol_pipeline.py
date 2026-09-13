@@ -47,7 +47,7 @@ class FootballUpdater:
             active, upcoming = self.projector.classify(raw)
             empty = [] if extra_only else self.validator.without_events(valid, sites)
             self.notifier.notify([url for url in valid if url not in empty], invalid + empty)
-            pool, results = self._extract_streams(driver, active)
+            pool, results = self._extract_streams(driver, active, progress)
             events = self.projector.tv_events(raw, results)
             active = [item for item in active if results[item["url"]][0]]
             if extra_only: active, upcoming = self.catalog.merge_extra_site(active, upcoming)
@@ -84,12 +84,21 @@ class FootballUpdater:
         for error in errors: print(f"Error en {error['url']}: {error['error']}")
         return raw, sites
 
-    def _extract_streams(self, driver, active):
+    def _extract_streams(self, driver, active, progress):
+        urls = list(dict.fromkeys(item["url"] for item in active))
+        progress.update("streams", 0, len(urls), "Iniciando extracción de m3u8...")
         if self.config["parallel"]:
             driver.quit(); driver = None
-        pool = StreamExtractionPool(driver, paralelo=self.config["parallel"], workers=self.config["workers"])
+        pool = StreamExtractionPool(
+            driver,
+            paralelo=self.config["parallel"],
+            workers=self.config["workers"],
+            progress_total=len(urls),
+            progress_callback=lambda done, total, url: progress.update(
+                "streams", done, total, f"Stream procesado: {done}/{total} ({url})"
+            ),
+        )
         results = {}
-        urls = list(dict.fromkeys(item["url"] for item in active))
         for url in urls: pool.submit(url)
         for url in urls:
             try: results[url] = pool.result(url)

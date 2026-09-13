@@ -17,11 +17,15 @@ LOGGER = logging.getLogger(__name__)
 class StreamExtractionPool:
     """Planifica extracción serial/paralela y encapsula todo el ciclo Selenium."""
 
-    def __init__(self, driver, paralelo=False, workers=2, espera=5, driver_factory=None):
+    def __init__(self, driver, paralelo=False, workers=2, espera=5, driver_factory=None,
+                 progress_callback=None, progress_total=0):
         self.driver = driver
         self.paralelo = paralelo
         self.espera = espera
         self.driver_factory = driver_factory or BrowserDriverFactory().create
+        self.progress_callback = progress_callback
+        self.progress_total = progress_total
+        self.completed = 0
         self.executor = ThreadPoolExecutor(max_workers=workers) if paralelo else None
         self.pending, self.results, self.lock = {}, {}, Lock()
 
@@ -94,11 +98,23 @@ class StreamExtractionPool:
         return None, None
 
     def _extract_with_new_driver(self, url):
-        driver = self.driver_factory()
-        try: return self.extract_from_link(driver, url)
+        driver = None
+        try:
+            driver = self.driver_factory()
+            return self.extract_from_link(driver, url)
         finally:
-            try: driver.quit()
-            except WebDriverException: pass
+            if driver is not None:
+                try: driver.quit()
+                except WebDriverException: pass
+            self._mark_completed(url)
+
+    def _mark_completed(self, url):
+        if not self.progress_callback:
+            return
+        with self.lock:
+            self.completed += 1
+            completed = self.completed
+        self.progress_callback(completed, self.progress_total, url)
 
     def submit(self, url):
         if not url or url in self.pending: return
@@ -108,7 +124,13 @@ class StreamExtractionPool:
     def result(self, url):
         with self.lock:
             if url in self.results: return self.results[url]
-        result = self.pending[url].result() if self.paralelo else self.extract_from_link(self.driver, url)
+        if self.paralelo:
+            result = self.pending[url].result()
+        else:
+            try:
+                result = self.extract_from_link(self.driver, url)
+            finally:
+                self._mark_completed(url)
         with self.lock: self.results[url] = result
         LOGGER.info("Stream %s: %s", url, result[1] or "no encontrado")
         return result

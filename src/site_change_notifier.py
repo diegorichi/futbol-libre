@@ -13,7 +13,7 @@ class SiteChangeNotifier:
         if invalid_urls:
             self.urls_file.parent.mkdir(parents=True, exist_ok=True)
             set_key(str(self.urls_file), "FUTBOL_LIBRE_URL", ",".join(valid_urls))
-            print(f"URLs eliminadas del .env: {len(invalid_urls)}")
+            print(f"URLs eliminadas por inservibles: {len(invalid_urls)}")
         else: return
         if not self.ntfy_url:
             print("NTFY_URL no configurada; no se envió aviso."); return

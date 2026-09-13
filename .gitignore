@@ -21,3 +21,4 @@ src/tvapp/**/*.iml
 
 # Catálogo generado para clientes TV
 eventos.*
+agenda_*.json

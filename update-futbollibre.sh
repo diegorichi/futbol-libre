@@ -15,5 +15,11 @@ source `pwd`/config.sh
 echo "--- Iniciando proceso diario $(date) ---"
 
 $PYTHON_VENV -m futbol_pipeline "$@"
+return_code=$?
 
-echo "--- Proceso finalizado ---"
+if [ "$return_code" -eq 0 ]; then
+    echo "--- Proceso finalizado ---"
+else
+    echo "--- Proceso finalizado con error (Código $return_code) ---"
+fi
+exit "$return_code"
