@@ -414,6 +414,28 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     @Override public String updateStatus() { return updateStatus; }
     @Override public void onBack() { back(); }
     @Override public void onTouch(float x, float y) { tap(x, y); }
+    @Override public void onEventTap(int index, boolean forPip) {
+        if (index < 0 || index >= events.size()) return;
+        if (forPip) {
+            pipEvent = index;
+            showPipSources();
+        } else {
+            selectedEvent = index;
+            showSources();
+        }
+    }
+    @Override public void onSourceTap(int index, boolean forPip) {
+        if (forPip) {
+            if (pipEvent >= 0 && pipEvent < events.size() && index >= 0 && index < events.get(pipEvent).sources.size()) {
+                pipSource = index;
+                startPip(events.get(pipEvent).sources.get(index));
+            }
+        } else if (selectedEvent >= 0 && selectedEvent < events.size()
+                && index >= 0 && index < events.get(selectedEvent).sources.size()) {
+            selectedSource = index;
+            preview(events.get(selectedEvent).sources.get(index));
+        }
+    }
     @Override public void onSwipe(boolean down) {
         onDpad(down ? KeyEvent.KEYCODE_DPAD_DOWN : KeyEvent.KEYCODE_DPAD_UP);
     }

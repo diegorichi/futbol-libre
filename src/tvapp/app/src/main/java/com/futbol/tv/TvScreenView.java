@@ -10,13 +10,17 @@ import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.futbol.tv.model.Event;
 
 import java.util.List;
 
 /** Dumb TV canvas: drawing and input forwarding only. */
-public final class TvScreenView extends View {
+public final class TvScreenView extends FrameLayout {
     public static final int SEARCHING = 0, EVENTS = 1, SOURCES = 2, PREVIEW = 3,
             PLAYER = 4, ERROR = 5, PIP_EVENTS = 6, PIP_SOURCES = 7, DUAL = 8, UPDATE = 9;
 
@@ -28,12 +32,19 @@ public final class TvScreenView extends View {
         int previewAction(); String playerMessage(); Bitmap logo(String url); String playbackLabel();
         String updateVersion(); String updateStatus();
         void onBack(); void onDpad(int keyCode); void onConfirm(); void onTouch(float x, float y); void onSwipe(boolean down); int onScroll(float deltaY);
+        void onEventTap(int index, boolean forPip); void onSourceTap(int index, boolean forPip);
     }
 
     private final Host host;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
     private final Handler overlayHandler = new Handler();
+    private final RecyclerView eventList;
+    private final RecyclerView sourceList;
+    private final EventListAdapter eventAdapter;
+    private SourceListAdapter sourceAdapter;
+    private String listKey = "";
+    private boolean listForPip;
     private boolean playbackOverlayVisible;
     private float downX;
     private float downY;
@@ -54,8 +65,25 @@ public final class TvScreenView extends View {
         super(context);
         this.host = host;
         density = getResources().getDisplayMetrics().density;
+        setWillNotDraw(false);
         setFocusable(true);
         requestFocus();
+        eventList = new RecyclerView(context);
+        eventList.setLayoutManager(new LinearLayoutManager(context));
+        eventList.setOverScrollMode(OVER_SCROLL_IF_CONTENT_SCROLLS);
+        eventList.setFocusable(false);
+        eventList.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+        eventAdapter = new EventListAdapter(host.events(), index -> host.onEventTap(index, listForPip));
+        eventList.setAdapter(eventAdapter);
+        sourceList = new RecyclerView(context);
+        sourceList.setLayoutManager(new LinearLayoutManager(context));
+        sourceList.setOverScrollMode(OVER_SCROLL_IF_CONTENT_SCROLLS);
+        sourceList.setFocusable(false);
+        sourceList.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+        eventList.setVisibility(GONE);
+        sourceList.setVisibility(GONE);
+        addView(eventList);
+        addView(sourceList);
     }
 
     private float d(float value) { return value * density; }
@@ -96,8 +124,47 @@ public final class TvScreenView extends View {
         c.drawText(value, d(x), d(y), paint);
     }
 
+    private int dp(float value) { return (int) (value * density + 0.5f); }
+
+    private void syncLists() {
+        int state = host.state();
+        boolean eventsState = state == EVENTS || state == PIP_EVENTS;
+        boolean sourcesState = state == SOURCES || state == PIP_SOURCES;
+        eventList.setVisibility(eventsState ? VISIBLE : GONE);
+        sourceList.setVisibility(sourcesState ? VISIBLE : GONE);
+        if (eventsState) {
+            listForPip = state == PIP_EVENTS;
+            String key = state + ":" + host.events().size() + ":" + host.selectedEvent() + ":" + host.pipEvent();
+            if (!key.equals(listKey)) {
+                listKey = key;
+                eventAdapter.setSelected(listForPip ? host.pipEvent() : host.selectedEvent());
+                eventList.scrollToPosition(listForPip ? host.pipEvent() : host.selectedEvent());
+            }
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, Math.max(0, getHeight() - dp(compactLayout() ? 82 : 98) - dp(46)));
+            params.topMargin = dp(compactLayout() ? 82 : 98);
+            eventList.setLayoutParams(params);
+        } else if (sourcesState && !host.events().isEmpty()) {
+            listForPip = state == PIP_SOURCES;
+            int eventIndex = listForPip ? host.pipEvent() : host.selectedEvent();
+            if (eventIndex < host.events().size()) {
+                String key = state + ":" + eventIndex + ":" + host.events().get(eventIndex).sources.size() + ":" + host.selectedSource() + ":" + host.pipSource();
+                if (!key.equals(listKey)) {
+                    listKey = key;
+                    sourceAdapter = new SourceListAdapter(host.events().get(eventIndex).sources, index -> host.onSourceTap(index, listForPip));
+                    sourceAdapter.setSelected(listForPip ? host.pipSource() : host.selectedSource());
+                    sourceList.setAdapter(sourceAdapter);
+                    sourceList.scrollToPosition(listForPip ? host.pipSource() : host.selectedSource());
+                }
+            }
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, Math.max(0, getHeight() - dp(compactLayout() ? 108 : 122) - dp(46)));
+            params.topMargin = dp(compactLayout() ? 108 : 122);
+            sourceList.setLayoutParams(params);
+        }
+    }
+
     @Override protected void onDraw(Canvas c) {
         int state = host.state();
+        syncLists();
         if (state != lastState) {
             dragY = 0;
             lastState = state;
@@ -127,6 +194,10 @@ public final class TvScreenView extends View {
         List<Event> events = host.events();
         header(c, forPip ? "Elegí el segundo evento para PiP" : "Eventos");
         if (events.isEmpty()) { text(c, "No hay eventos disponibles", compactLayout() ? 24 : 80, compactLayout() ? 130 : 170, 22, Color.LTGRAY, false); return; }
+        if (eventList.getVisibility() == VISIBLE) {
+            text(c, forPip ? "El principal sigue reproduciendo" : (compactLayout() ? "Tocá un evento · Deslizá para desplazarte" : "OK para seleccionar · Flechas para desplazarte"), compactLayout() ? 24 : 70, heightDp() - 24, compactLayout() ? 13 : 16, Color.LTGRAY, false);
+            return;
+        }
         if (compactLayout()) { drawCompactEvents(c, events, forPip); return; }
         int offset = forPip ? host.pipEventOffset() : host.eventOffset();
         int selected = forPip ? host.pipEvent() : host.selectedEvent();
@@ -271,6 +342,11 @@ public final class TvScreenView extends View {
 
     private void drawSources(Canvas c) {
         Event event = host.events().get(host.selectedEvent());
+        if (sourceList.getVisibility() == VISIBLE) {
+            header(c, event.title);
+            text(c, compactLayout() ? "Elegí una fuente · Tocá para reproducir" : "Elegí una fuente · Flechas para desplazarte", compactLayout() ? 24 : 70, compactLayout() ? 100 : 135, compactLayout() ? 14 : 18, Color.LTGRAY, false);
+            return;
+        }
         if (compactLayout()) { drawCompactSources(c, event); return; }
         header(c, event.title); text(c, compactLayout() ? "Elegí una fuente · Deslizá para desplazarte" : "Elegí una fuente · Flechas para desplazarte", compactLayout() ? 24 : 70, compactLayout() ? 100 : 135, compactLayout() ? 14 : 18, Color.LTGRAY, false);
         if (event.sources.isEmpty()) { text(c, "No hay fuentes disponibles", 85, 205, 22, Color.LTGRAY, false); return; }
@@ -366,6 +442,7 @@ public final class TvScreenView extends View {
 
     private void drawPipSources(Canvas c) {
         c.drawColor(Color.rgb(7,17,31)); Event event = host.events().get(host.pipEvent()); header(c,event.title); text(c,compactLayout() ? "Elegí la fuente para PiP · Tocá para reproducir" : "Elegí la fuente para PiP · OK para reproducir muteado",compactLayout() ? 24 : 70,compactLayout() ? 100 : 135,compactLayout() ? 14 : 18,Color.LTGRAY,false);
+        if (sourceList.getVisibility() == VISIBLE) return;
         float right = widthDp() - (compactLayout() ? 16 : 55);
         for(int i=host.pipSourceOffset();i<Math.min(event.sources.size(),host.pipSourceOffset()+visibleRows());i++){float y=(compactLayout() ? 135 : 170)+(i-host.pipSourceOffset())*48;if(i==host.pipSource()){paint.setColor(Color.rgb(25,57,77));c.drawRoundRect(d(compactLayout() ? 16 : 55),d(y-27),d(right),d(y+13),d(8),d(8),paint);}text(c,fit(event.sources.get(i).name,right-(compactLayout() ? 32 : 85),compactLayout() ? 17 : 20),compactLayout() ? 32 : 85,y,compactLayout() ? 17 : 20,Color.WHITE,i==host.pipSource());}
     }
