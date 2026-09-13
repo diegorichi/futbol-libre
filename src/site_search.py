@@ -26,6 +26,7 @@ class SiteSearchClient:
         opener = self.opener_factory(HTTPCookieProcessor(CookieJar()))
         payloads = []
         for engine in ([self.engine] if self.engine else [None]):
+            # do not put quotes for query, to avoid search by literal.
             params = {"q": self.query, "format": "json", "size": limit}
             if engine:
                 params["engines"] = engine
