@@ -38,6 +38,23 @@ class StreamExtractionPool:
             return m3u8.group(0).replace("\\/", "/"), "m3u8"
         return None, None
 
+    @staticmethod
+    def extract_runtime_url(driver):
+        """Lee playbackURL después de que el JavaScript de la página lo descifra."""
+        try:
+            url = driver.execute_script("""
+                const value = window.playbackURL;
+                return typeof value === "string" && value.startsWith("http")
+                    ? value
+                    : null;
+            """)
+        except WebDriverException:
+            return None, None
+        if url:
+            LOGGER.log(5, "URL playbackURL runtime detectada")
+            return url, "playbackURL-runtime"
+        return None, None
+
     def extract_from_link(self, driver, url):
         try:
             driver.switch_to.default_content(); driver.get(url)
@@ -60,6 +77,8 @@ class StreamExtractionPool:
         return result if result[0] else False
 
     def _extract_context(self, driver):
+        runtime = self.extract_runtime_url(driver)
+        if runtime[0]: return runtime
         result = self.extract_url(driver.page_source)
         if result[0]: return result
         for iframe in driver.find_elements(By.TAG_NAME, "iframe"):
