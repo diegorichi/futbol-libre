@@ -1,12 +1,12 @@
 import json
 import os
-from threading import Lock
+from threading import RLock
 
 
 class ProgressReporter:
     def __init__(self, path):
         self.path = path
-        self._lock = Lock()
+        self._lock = RLock()
 
     def reset(self):
         self._write({
@@ -17,27 +17,30 @@ class ProgressReporter:
         })
 
     def update(self, stage, completed, total, message):
-        current = self.snapshot()
-        percent = 100 if total == 0 else round(completed * 100 / total)
-        current["stage"] = stage
-        current[stage] = {"completed": completed, "total": total, "percent": percent}
-        current["message"] = message
-        self._write(current)
+        with self._lock:
+            current = self.snapshot()
+            percent = 100 if total == 0 else round(completed * 100 / total)
+            current["stage"] = stage
+            current[stage] = {"completed": completed, "total": total, "percent": percent}
+            current["message"] = message
+            self._write(current)
 
     def complete(self, message="Actualización completa."):
-        current = self.snapshot()
-        for stage in ("sites", "streams"):
-            current[stage]["completed"] = current[stage]["total"]
-            current[stage]["percent"] = 100
-        current["stage"] = "done"
-        current["message"] = message
-        self._write(current)
+        with self._lock:
+            current = self.snapshot()
+            for stage in ("sites", "streams"):
+                current[stage]["completed"] = current[stage]["total"]
+                current[stage]["percent"] = 100
+            current["stage"] = "done"
+            current["message"] = message
+            self._write(current)
 
     def fail(self, message):
-        current = self.snapshot()
-        current["stage"] = "error"
-        current["message"] = message
-        self._write(current)
+        with self._lock:
+            current = self.snapshot()
+            current["stage"] = "error"
+            current["message"] = message
+            self._write(current)
 
     def snapshot(self):
         try:

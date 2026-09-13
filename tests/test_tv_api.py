@@ -39,6 +39,26 @@ class TvApiContractTest(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn('href="/tvapp"', response.text)
+        self.assertIn('href="/agenda"', response.text)
+
+    def test_web_agenda_deduplicates_channels_and_keeps_future_events(self):
+        from datetime import datetime
+        from futbol_output import OutputPublisher
+        from server.services.web_agenda_service import WebAgendaService
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "agenda.json"
+            ahora = datetime(2026, 9, 12, 20, 0)
+            OutputPublisher().publish_agenda([
+                {"hora": "19:59", "nombre": "Liga: Partido vencido", "opciones": [{"canal": "ESPN"}]},
+                {"hora": "20:01", "nombre": "Liga: Partido futuro", "opciones": [{"canal": "ESPN"}, {"canal": "Disney+"}]},
+                {"hora": "02:00", "nombre": "Copa: Partido mañana", "opciones": [{"canal": "TNT"}]},
+            ], path, ahora)
+            events = WebAgendaService(path, ahora).events()
+
+            self.assertEqual([event["match"] for event in events], ["Partido futuro", "Partido mañana"])
+            self.assertEqual(events[0]["channel"], "ESPN, ...")
+            self.assertEqual(events[1]["date"], "2026-09-13")
 
     def test_events_contract(self):
         response = self.client.get("/api/v1/events")
@@ -101,12 +121,12 @@ https://two.test/disney.m3u8
         )
 
     def test_agenda_hour_rolls_back_to_previous_day_after_midnight(self):
-        import futbol
+        from futbol_events import EventCatalog
         from datetime import datetime
 
         ahora = datetime(2026, 9, 10, 0, 38)
         self.assertEqual(
-            futbol._hora_mas_cercana("21:30", ahora),
+            EventCatalog.nearest_time("21:30", ahora),
             datetime(2026, 9, 9, 21, 30),
         )
 
@@ -129,7 +149,7 @@ https://one.test/real.m3u8
             self.assertEqual([event.title for event in events], ["Partido real"])
 
     def test_extra_site_upsert_preserves_existing_grid(self):
-        import futbol
+        from futbol_events import EventCatalog
         from datetime import datetime
 
         with tempfile.TemporaryDirectory() as directory:
@@ -149,9 +169,7 @@ https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8
 https://old.test/vencido.m3u8
 """, encoding="utf-8")
 
-            with patch.object(futbol, "M3U_FILE", str(m3u_path)), \
-                    patch.object(futbol, "XML_FILE", str(xml_path)):
-                active, upcoming = futbol._fusionar_sitio_extra(
+            active, upcoming = EventCatalog(str(m3u_path), str(xml_path), "https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8").merge_extra_site(
                     [{"nombre": "MLS: Chicago Fire vs Inter Miami", "hora": "20:30", "canal": "Apple TV", "logo": "", "url": "https://new.test/mls.m3u8"}],
                     [],
                     ahora=datetime(2026, 9, 9, 20, 45),

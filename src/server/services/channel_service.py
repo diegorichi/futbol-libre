@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from server.models.channel import Channel, Event, EventSource
-from event_time import hora_mas_cercana
+from event_time import EventClock
 
 
 class ChannelService:
@@ -55,7 +55,7 @@ class ChannelService:
         return sorted(result, key=lambda item: self._nearest_time(item.hora))
 
     def _nearest_time(self, value):
-        return hora_mas_cercana(value, self.now)
+        return EventClock().nearest(value, self.now)
 
     def list_events(self):
         """Return the current dynamic event catalog for TV/mobile clients.

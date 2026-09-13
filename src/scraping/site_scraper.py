@@ -1,30 +1,37 @@
-"""Recorrido de múltiples sitios y combinación de sus eventos."""
-
+"""Recorrido aislado de sitios y agrupación de eventos."""
+import logging
 from .event_extractor import extraer_eventos
 from .event_matching import agrupar_eventos
 
+LOGGER = logging.getLogger(__name__)
 
-def extraer_eventos_de_sitios(driver, urls, progress_callback=None):
-    eventos = []
-    sitios_ok = []
-    errores = []
 
-    total = len(urls)
-    for completed, url in enumerate(urls, start=1):
-        try:
-            driver.switch_to.default_content()
-            driver.get(url)
-            encontrados, estrategia = extraer_eventos(driver)
-            for evento in encontrados:
-                evento["fuentes"] = [url]
-                for opcion in evento.get("opciones", []):
-                    opcion["fuente"] = url
-                eventos.append(evento)
-            sitios_ok.append({"url": url, "estrategia": estrategia, "eventos": len(encontrados)})
-        except Exception as error:
-            errores.append({"url": url, "error": str(error)})
-        if progress_callback:
-            progress_callback(completed, total, url)
+class SiteScraper:
+    def __init__(self, extractor=extraer_eventos, matcher=agrupar_eventos):
+        self.extractor = extractor
+        self.matcher = matcher
 
-    driver.switch_to.default_content()
-    return agrupar_eventos(eventos), sitios_ok, errores
+    def scrape(self, driver, urls, progress_callback=None):
+        events, sites, errors = [], [], []
+        LOGGER.info("Iniciando scraping de %d sitios", len(urls))
+        for completed, url in enumerate(urls, start=1):
+            try:
+                LOGGER.debug("Abriendo sitio %s", url)
+                driver.switch_to.default_content(); driver.get(url)
+                found, strategy = self.extractor(driver)
+                for event in found:
+                    event["fuentes"] = [url]
+                    for option in event.get("opciones", []):
+                        option["fuente"] = url
+                        LOGGER.log(5, "Opción detectada: sitio=%s canal=%s url=%s", url, option.get("canal"), option.get("url"))
+                    events.append(event)
+                sites.append({"url": url, "estrategia": strategy, "eventos": len(found)})
+                LOGGER.info("Sitio %s: %d eventos vía %s", url, len(found), strategy)
+            except Exception as error:
+                LOGGER.exception("Falló el scraping de %s", url)
+                errors.append({"url": url, "error": str(error)})
+            if progress_callback: progress_callback(completed, len(urls), url)
+        driver.switch_to.default_content()
+        grouped = self.matcher(events)
+        LOGGER.info("Scraping terminado: %d eventos crudos, %d agrupados", len(events), len(grouped))
+        return grouped, sites, errors

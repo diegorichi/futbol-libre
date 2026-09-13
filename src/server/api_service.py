@@ -10,6 +10,7 @@ from flask import Flask, jsonify, render_template, request, send_file
 from server.models.task_status import TaskStatus
 from server.services.agenda_service import AgendaService
 from server.services.channel_service import ChannelService
+from server.services.web_agenda_service import WebAgendaService
 from server.services.process_runner import ProcessRunner
 from server.discovery import MdnsAdvertiser, UdpDiscoveryResponder
 from progress import ProgressReporter
@@ -90,6 +91,15 @@ def channels_page():
             channels=[],
             source_dates={"xml": "No disponible", "m3u": "No disponible"},
         )
+
+
+@app.get("/agenda")
+def agenda_page():
+    events = WebAgendaService(configured_path("AGENDA_FILE", "agenda_web.json")).events()
+    grouped = {}
+    for event in events:
+        grouped.setdefault(event["date"], []).append(event)
+    return render_template("agenda.html", agenda=grouped)
 
 
 @app.get("/sistemas")
@@ -188,6 +198,12 @@ def tv_events():
         })
     except FileNotFoundError:
         return jsonify({"api_version": "v1", "generated_at": None, "refresh_after": 60, "events": []})
+
+
+@app.get("/api/v1/agenda")
+def web_agenda():
+    events = WebAgendaService(configured_path("AGENDA_FILE", "agenda_web.json")).events()
+    return jsonify({"api_version": "v1", "generated_at": datetime.now(timezone.utc).isoformat(), "events": events})
 
 
 @app.get("/api/v1/discovery")

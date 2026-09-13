@@ -26,6 +26,7 @@ class Response:
 class SearchSitesTest(unittest.TestCase):
     def test_uses_browser_headers_and_configured_engine(self):
         import search_sites
+        from site_search import SiteSearchClient
 
         responses = [{"results": [{"url": "https://futbol.example/"}]}]
 
@@ -36,7 +37,7 @@ class SearchSitesTest(unittest.TestCase):
             opener = build_opener.return_value
             opener.open.side_effect = [Response(payload) for payload in responses]
 
-            self.assertEqual(search_sites.fetch_urls(), ["https://futbol.example/"])
+            self.assertEqual(SiteSearchClient(search_sites.SEARCH_URL, search_sites.ENGINE, search_sites.QUERY, opener_factory=search_sites.build_opener).fetch_urls(), ["https://futbol.example/"])
 
         request = opener.open.call_args_list[0].args[0]
         self.assertIn("engines=duckduckgo", request.full_url)
@@ -45,10 +46,10 @@ class SearchSitesTest(unittest.TestCase):
         self.assertIn("Macintosh", request.get_header("User-agent"))
 
     def test_identifies_loaded_sites_without_events(self):
-        import futbol
+        from site_validator import SiteValidator
 
         self.assertEqual(
-            futbol.urls_sin_eventos(
+            SiteValidator().without_events(
                 ["https://ok.test", "https://empty.test", "https://error.test"],
                 [
                     {"url": "https://ok.test", "eventos": 2},
