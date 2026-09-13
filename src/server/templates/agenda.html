@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card wide agenda-page">
+  <div class="channels-heading"><div><p class="section-kicker">Agenda deportiva</p><h1>Agenda</h1></div></div>
+  {% for date, events in agenda.items() %}
+    <h2 class="agenda-date">{{ "HOY" if loop.first else date }}</h2>
+    <div class="agenda-list">
+      {% for event in events %}
+        <article class="agenda-row"><time>{{ event.time }}</time><span>{{ event.tournament or "—" }}</span><strong>{{ event.match }}</strong><span>{{ event.channel or "—" }}</span></article>
+      {% endfor %}
+    </div>
+  {% else %}<p class="empty-state">No hay próximos eventos.</p>{% endfor %}
+</section>
+{% endblock %}

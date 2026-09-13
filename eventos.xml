@@ -300,403 +300,403 @@
   <channel id="E100">
     <display-name>Evento 100</display-name>
   </channel>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E01">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; TNT SportsCalidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; TNT SportsCalidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E02">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; ESPN 5Calidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; ESPN 5Calidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E03">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; Disney+Calidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; Disney+Calidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E04">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; TNT Sports | OP 2Calidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; TNT Sports | OP 2Calidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E05">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; FanatizCalidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; FanatizCalidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E06">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; ESPN 5 | OP 2Calidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; ESPN 5 | OP 2Calidad 720p</desc>
-  </programme>
-  <programme start="20260912173000 -0300" stop="20260912203000 -0300" channel="E07">
-    <title lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; Disney+ | OP 2Calidad 720p</title>
-    <desc lang="es">[17:30] Liga Profesional: Atlético Tucumán vs River Plate ; Disney+ | OP 2Calidad 720p</desc>
-  </programme>
-  <programme start="20260912180500 -0300" stop="20260912210500 -0300" channel="E08">
-    <title lang="es">[18:05] Liga BetPlay: Inter Bogotá vs Llaneros ; FanatizCalidad 720p</title>
-    <desc lang="es">[18:05] Liga BetPlay: Inter Bogotá vs Llaneros ; FanatizCalidad 720p</desc>
-  </programme>
-  <programme start="20260912180500 -0300" stop="20260912210500 -0300" channel="E09">
-    <title lang="es">[18:05] Liga BetPlay: Inter Bogotá vs Llaneros ; Win Sports+Calidad 720p</title>
-    <desc lang="es">[18:05] Liga BetPlay: Inter Bogotá vs Llaneros ; Win Sports+Calidad 720p</desc>
-  </programme>
-  <programme start="20260912183000 -0300" stop="20260912213000 -0300" channel="E10">
-    <title lang="es">[18:30] Brasileirão: Palmeiras vs São Paulo ; FanatizCalidad 720p</title>
-    <desc lang="es">[18:30] Brasileirão: Palmeiras vs São Paulo ; FanatizCalidad 720p</desc>
-  </programme>
-  <programme start="20260912183000 -0300" stop="20260912213000 -0300" channel="E11">
-    <title lang="es">[18:30] Brasileirão: Palmeiras vs São Paulo ; Win SportsCalidad 720p</title>
-    <desc lang="es">[18:30] Brasileirão: Palmeiras vs São Paulo ; Win SportsCalidad 720p</desc>
-  </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E12">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E01">
     <title lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; FanatizCalidad 720p</title>
     <desc lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; FanatizCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E13">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E02">
     <title lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; ESPN PremiumCalidad 720p</title>
     <desc lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; ESPN PremiumCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E14">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E03">
     <title lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; ESPN Premium | OP 2Calidad 720p</title>
     <desc lang="es">[20:00] Liga Profesional: Talleres Córdoba vs Unión Santa Fe ; ESPN Premium | OP 2Calidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E15">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E04">
     <title lang="es">[20:00] Primera División: Palestino vs Universidad Católica ; TNT Sports CLCalidad 720p</title>
     <desc lang="es">[20:00] Primera División: Palestino vs Universidad Católica ; TNT Sports CLCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E16">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E05">
     <title lang="es">[20:00] Primera División: Cerro Largo vs Central Español ; Disney+Calidad 720p</title>
     <desc lang="es">[20:00] Primera División: Cerro Largo vs Central Español ; Disney+Calidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E17">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E06">
     <title lang="es">[20:00] Liga MX: Toluca vs Atlas ; Canal 5 MXCalidad 720p</title>
     <desc lang="es">[20:00] Liga MX: Toluca vs Atlas ; Canal 5 MXCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E18">
-    <title lang="es">[20:00] Liga MX: Toluca vs Atlas ; TUDN USCalidad 720p</title>
-    <desc lang="es">[20:00] Liga MX: Toluca vs Atlas ; TUDN USCalidad 720p</desc>
-  </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E19">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E07">
     <title lang="es">[20:00] Liga MX: Toluca vs Atlas ; TUDN MXCalidad 720p</title>
     <desc lang="es">[20:00] Liga MX: Toluca vs Atlas ; TUDN MXCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E20">
+  <programme start="20260912200000 -0300" stop="20260912230000 -0300" channel="E08">
+    <title lang="es">[20:00] Liga MX: Toluca vs Atlas ; Canal 5 MX | OP 2Calidad 720p</title>
+    <desc lang="es">[20:00] Liga MX: Toluca vs Atlas ; Canal 5 MX | OP 2Calidad 720p</desc>
+  </programme>
+  <programme start="20260912201000 -0300" stop="20260912231000 -0300" channel="E09">
     <title lang="es">[20:10] Liga BetPlay: Boyacá Chicó vs Medellín ; FanatizCalidad 720p</title>
     <desc lang="es">[20:10] Liga BetPlay: Boyacá Chicó vs Medellín ; FanatizCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E21">
+  <programme start="20260912201000 -0300" stop="20260912231000 -0300" channel="E10">
     <title lang="es">[20:10] Liga BetPlay: Boyacá Chicó vs Medellín ; Win Sports+Calidad 720p</title>
     <desc lang="es">[20:10] Liga BetPlay: Boyacá Chicó vs Medellín ; Win Sports+Calidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E22">
-    <title lang="es">PROXIMAMENTE: [20:30] Brasileirão: Botafogo vs RB Bragantino</title>
-    <desc lang="es">PROXIMAMENTE: [20:30] Brasileirão: Botafogo vs RB Bragantino</desc>
+  <programme start="20260912203000 -0300" stop="20260912233000 -0300" channel="E11">
+    <title lang="es">[20:30] Brasileirão: Botafogo vs RB Bragantino ; FanatizCalidad 720p</title>
+    <desc lang="es">[20:30] Brasileirão: Botafogo vs RB Bragantino ; FanatizCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E23">
-    <title lang="es">PROXIMAMENTE: [20:30] MLS: Inter Miami vs Nashville SC</title>
-    <desc lang="es">PROXIMAMENTE: [20:30] MLS: Inter Miami vs Nashville SC</desc>
+  <programme start="20260912203000 -0300" stop="20260912233000 -0300" channel="E12">
+    <title lang="es">[20:30] MLS: Inter Miami vs Nashville SC ; MLS Season PassCalidad 720p</title>
+    <desc lang="es">[20:30] MLS: Inter Miami vs Nashville SC ; MLS Season PassCalidad 720p</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E24">
+  <programme start="20260912203000 -0300" stop="20260912233000 -0300" channel="E13">
+    <title lang="es">[20:30] MLS: Inter Miami vs Nashville SC ; MLS Season Pass | OP 2Calidad 720p</title>
+    <desc lang="es">[20:30] MLS: Inter Miami vs Nashville SC ; MLS Season Pass | OP 2Calidad 720p</desc>
+  </programme>
+  <programme start="20260912210000 -0300" stop="20260913000000 -0300" channel="E14">
+    <title lang="es">[21:00] Brasileirão: Santos vs Cruzeiro ; FanatizCalidad 720p</title>
+    <desc lang="es">[21:00] Brasileirão: Santos vs Cruzeiro ; FanatizCalidad 720p</desc>
+  </programme>
+  <programme start="20260912210000 -0300" stop="20260913000000 -0300" channel="E15">
+    <title lang="es">[21:00] Brasileirão: Santos vs Cruzeiro ; Premiere 2Calidad 720p</title>
+    <desc lang="es">[21:00] Brasileirão: Santos vs Cruzeiro ; Premiere 2Calidad 720p</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E16">
+    <title lang="es">PROXIMAMENTE: [22:00] Liga 1: Alianza Lima vs Universitario</title>
+    <desc lang="es">PROXIMAMENTE: [22:00] Liga 1: Alianza Lima vs Universitario</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E17">
+    <title lang="es">PROXIMAMENTE: [22:10] Liga MX: Monterrey vs Tigres UANL</title>
+    <desc lang="es">PROXIMAMENTE: [22:10] Liga MX: Monterrey vs Tigres UANL</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E18">
+    <title lang="es">PROXIMAMENTE: [22:20] Liga BetPlay: Alianza vs Junior</title>
+    <desc lang="es">PROXIMAMENTE: [22:20] Liga BetPlay: Alianza vs Junior</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E19">
+    <title lang="es">PROXIMAMENTE: [00:15] Liga MX: Cruz Azul vs América</title>
+    <desc lang="es">PROXIMAMENTE: [00:15] Liga MX: Cruz Azul vs América</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E20">
+    <title lang="es">Slot Libre - Sin Eventos</title>
+    <desc lang="es">Slot Libre - Sin Eventos</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E21">
+    <title lang="es">Slot Libre - Sin Eventos</title>
+    <desc lang="es">Slot Libre - Sin Eventos</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E22">
+    <title lang="es">Slot Libre - Sin Eventos</title>
+    <desc lang="es">Slot Libre - Sin Eventos</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E23">
+    <title lang="es">Slot Libre - Sin Eventos</title>
+    <desc lang="es">Slot Libre - Sin Eventos</desc>
+  </programme>
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E24">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E25">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E25">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E26">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E26">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E27">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E27">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E28">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E28">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E29">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E29">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E30">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E30">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E31">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E31">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E32">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E32">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E33">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E33">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E34">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E34">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E35">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E35">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E36">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E36">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E37">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E37">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E38">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E38">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E39">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E39">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E40">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E40">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E41">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E41">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E42">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E42">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E43">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E43">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E44">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E44">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E45">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E45">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E46">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E46">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E47">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E47">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E48">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E48">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E49">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E49">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E50">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E50">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E51">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E51">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E52">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E52">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E53">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E53">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E54">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E54">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E55">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E55">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E56">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E56">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E57">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E57">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E58">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E58">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E59">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E59">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E60">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E60">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E61">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E61">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E62">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E62">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E63">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E63">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E64">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E64">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E65">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E65">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E66">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E66">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E67">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E67">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E68">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E68">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E69">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E69">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E70">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E70">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E71">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E71">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E72">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E72">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E73">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E73">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E74">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E74">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E75">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E75">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E76">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E76">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E77">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E77">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E78">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E78">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E79">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E79">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E80">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E80">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E81">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E81">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E82">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E82">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E83">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E83">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E84">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E84">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E85">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E85">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E86">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E86">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E87">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E87">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E88">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E88">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E89">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E89">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E90">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E90">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E91">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E91">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E92">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E92">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E93">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E93">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E94">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E94">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E95">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E95">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E96">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E96">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E97">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E97">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E98">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E98">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E99">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E99">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>
-  <programme start="20260912194500 -0300" stop="20260912224500 -0300" channel="E100">
+  <programme start="20260912211300 -0300" stop="20260913001300 -0300" channel="E100">
     <title lang="es">Slot Libre - Sin Eventos</title>
     <desc lang="es">Slot Libre - Sin Eventos</desc>
   </programme>

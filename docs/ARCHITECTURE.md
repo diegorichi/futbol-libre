@@ -8,7 +8,7 @@ Este documento describe lo que está implementado en este checkout. No es una es
 cron / Flask / ejecución manual
           |
           v
-update-futbollibre.sh -> src/futbol.py
+update-futbollibre.sh -> python -m futbol_pipeline
           |
           +-> Selenium: valida dominios
           +-> src/scraping: eventos por estrategias + iframes
@@ -34,7 +34,7 @@ update-futbol-libre-sites.sh -> SearXNG -> futbol_libre_urls.env
 ### 1. Scraping y extracción
 
 - Entrada: `FUTBOL_LIBRE_URL_FILE` primero; `.env` queda como fallback.
-- `src/futbol.py` crea el driver Selenium, valida cada dominio y conserva los válidos.
+- `FootballUpdater` crea el driver Selenium, valida cada dominio y conserva los válidos.
 - `src/scraping/site_scraper.py` recorre sitios y agrega `fuente` a eventos/opciones.
 - `src/scraping/event_extractor.py` combina estrategias HTML, PHP, canal directo, tiempo estructurado, agenda y menú; también recorre iframes.
 - `event_matching.py` agrupa eventos equivalentes entre sitios.
@@ -51,9 +51,11 @@ Salidas actuales:
 
 ### 2. SearXNG y URLs de sitios
 
-`update-futbol-libre-sites.sh` ejecuta `src/search_sites.py`. El resultado se escribe en `futbol_libre_urls.env` mediante archivo temporal y replace. Si la búsqueda queda vacía o bloqueada, se conserva la lista anterior.
+`update-futbol-libre-sites.sh` ejecuta `src/search_sites.py`. El entrypoint delega la consulta a SearXNG en `src/site_search.py` y la persistencia atómica en `src/site_url_store.py`. El resultado se escribe en `futbol_libre_urls.env` mediante archivo temporal y replace. Si la búsqueda queda vacía o bloqueada, se conserva la lista anterior.
 
-La rutina de validación en `src/futbol.py` elimina dominios inválidos solo si queda al menos uno válido. NTFY se envía únicamente cuando hubo cambios efectivos; no se envía por una ejecución sin cambios.
+La validación y el pipeline operativo están en `src/futbol_pipeline.py`; no existe un módulo monolítico `futbol.py`. Los dominios inválidos se eliminan solo si queda al menos uno válido. NTFY se envía únicamente cuando hubo cambios efectivos; no se envía por una ejecución sin cambios.
+
+El scraper usa `BrowserDriverFactory` y `SiteScraper`. El logging se configura con `LOG_LEVEL=INFO|DEBUG|TRACE`: `TRACE` registra opciones individuales detectadas, `DEBUG` decisiones internas y `INFO` etapas y resultados.
 
 Esto es mantenimiento de fuentes, no extracción de eventos. La agenda principal corre después por `update-futbollibre.sh` según el cron instalado.
 

@@ -1,0 +1,37 @@
+{
+  "api_version": "v1",
+  "events": [
+    {
+      "starts_at": "2026-09-12T22:00:00",
+      "date": "2026-09-12",
+      "time": "22:00",
+      "tournament": "Liga 1",
+      "match": "Alianza Lima vs Universitario",
+      "channel": "Liga 1 MaxCalidad 720p, ..."
+    },
+    {
+      "starts_at": "2026-09-12T22:10:00",
+      "date": "2026-09-12",
+      "time": "22:10",
+      "tournament": "Liga MX",
+      "match": "Monterrey vs Tigres UANL",
+      "channel": "Canal 5 MXCalidad 720p, ..."
+    },
+    {
+      "starts_at": "2026-09-12T22:20:00",
+      "date": "2026-09-12",
+      "time": "22:20",
+      "tournament": "Liga BetPlay",
+      "match": "Alianza vs Junior",
+      "channel": "Eventos Calidad 720p, ..."
+    },
+    {
+      "starts_at": "2026-09-13T00:15:00",
+      "date": "2026-09-13",
+      "time": "00:15",
+      "tournament": "Liga MX",
+      "match": "Cruz Azul vs América",
+      "channel": "Canal 5 MXCalidad 720p, ..."
+    }
+  ]
+}

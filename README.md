@@ -5,7 +5,7 @@ Servidor local y cliente Android TV para consultar eventos deportivos y reproduc
 ## Estructura
 
 - `src/server/`: API Flask, interfaz web y descubrimiento mDNS.
-- `src/futbol.py`: scraping y generación de `eventos.m3u`, `eventos.xml` y `eventos.json`.
+- `src/futbol_pipeline.py`: coordinación del scraping y generación de `eventos.m3u`, `eventos.xml` y `eventos.json`.
 - `src/tvapp/`: proyecto Android TV.
 - `output/`: APK listo para instalar en el TV.
 
