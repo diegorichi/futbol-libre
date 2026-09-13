@@ -1,4 +1,5 @@
 let poller;
+const tailState = new WeakMap();
 
 function setStatus(element, message, kind) {
   element.textContent = message;
@@ -11,6 +12,39 @@ function updateProgress(progress) {
     const percent = progress[stage]?.percent || 0;
     document.getElementById(`${stage}-progress`).value = percent;
     document.getElementById(`${stage}-progress-value`).textContent = `${percent}%`;
+  }
+}
+
+function resetTail(tail) {
+  tailState.delete(tail);
+  tail.textContent = '';
+}
+
+function updateTail(tail, lines) {
+  const incoming = lines || [];
+  const previous = tailState.get(tail) || [];
+  const distanceFromBottom = tail.scrollHeight - tail.scrollTop - tail.clientHeight;
+  const wasFollowingBottom = distanceFromBottom <= 8;
+  let next = incoming;
+
+  if (previous.length && incoming.length) {
+    let overlap = Math.min(previous.length, incoming.length);
+    while (overlap > 0) {
+      const matches = previous
+        .slice(previous.length - overlap)
+        .every((line, index) => line === incoming[index]);
+      if (matches) break;
+      overlap -= 1;
+    }
+    next = overlap ? previous.concat(incoming.slice(overlap)) : incoming;
+  }
+
+  if (next.join('\n') === previous.join('\n')) return;
+  tailState.set(tail, next);
+  tail.textContent = next.join('\n');
+
+  if (wasFollowingBottom) {
+    tail.scrollTop = tail.scrollHeight;
   }
 }
 
@@ -57,8 +91,7 @@ function openPip(event, stream, videoId) {
 
 function pollStatus(button, status, tail) {
   fetch('/status').then(response => response.json()).then(data => {
-    tail.textContent = data.output.join('\n');
-    tail.scrollTop = tail.scrollHeight;
+    updateTail(tail, data.output);
     updateProgress(data.progress);
     if (data.is_running) {
       setStatus(status, data.message || 'Ejecutando...', '');
@@ -82,12 +115,12 @@ function updateUrl() {
   const extraUrl = document.getElementById('extra-url').value.trim();
   if (!url) return setStatus(status, 'La URL es obligatoria.', 'error');
   button.disabled = true;
-  tail.textContent = '';
+  resetTail(tail);
   fetch('/update-url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, extra_url: extraUrl}) })
     .then(response => response.json().then(data => ({ok: response.ok, data})))
     .then(result => {
       if (!result.ok && result.data.running) {
-        tail.textContent = (result.data.status.output || []).join('\n');
+        updateTail(tail, result.data.status.output || []);
         updateProgress(result.data.status.progress);
         poller = setInterval(() => pollStatus(button, status, tail), 1000);
         throw new Error('Ya hay un proceso corriendo; mostrando su log.');
@@ -109,7 +142,7 @@ function processExtra() {
   const extraUrl = document.getElementById('extra-url').value.trim();
   if (!extraUrl) return setStatus(status, 'La URL adicional es obligatoria.', 'error');
   button.disabled = true;
-  tail.textContent = '';
+  resetTail(tail);
   fetch('/update-url', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -118,7 +151,7 @@ function processExtra() {
     .then(response => response.json().then(data => ({ok: response.ok, data})))
     .then(result => {
       if (!result.ok && result.data.running) {
-        tail.textContent = (result.data.status.output || []).join('\n');
+        updateTail(tail, result.data.status.output || []);
         updateProgress(result.data.status.progress);
         poller = setInterval(() => pollStatus(button, status, tail), 1000);
         throw new Error('Ya hay un proceso corriendo; mostrando su log.');
@@ -156,7 +189,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/status').then(response => response.json()).then(data => {
     if (data.is_running) {
       runButton.disabled = true;
-      tail.textContent = data.output.join('\n');
+      updateTail(tail, data.output);
       updateProgress(data.progress);
       poller = setInterval(() => pollStatus(runButton, status, tail), 1000);
     }
