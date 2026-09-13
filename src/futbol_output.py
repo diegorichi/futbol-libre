@@ -3,6 +3,7 @@
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from xml.sax.saxutils import escape
 from event_time import EventClock
 from scraping.event_matching import normalizar_nombre
 
@@ -24,8 +25,10 @@ class OutputPublisher:
             except (TypeError, ValueError): start = now
             start_xml = start.strftime("%Y%m%d%H%M%S") + " -0300"
             stop_xml = (start + timedelta(hours=3)).strftime("%Y%m%d%H%M%S") + " -0300"
-            lines += [f'  <programme start="{start_xml}" stop="{stop_xml}" channel="{event["slot"]}">', f'    <title lang="es">{event["nombre_guia"]}</title>', f'    <desc lang="es">{event["nombre_guia"]}</desc>']
-            if event.get("logo"): lines.append(f'    <icon src="{event["logo"]}" />')
+            title = escape(str(event["nombre_guia"]))
+            logo = escape(str(event.get("logo", "")), {"\"": "&quot;"})
+            lines += [f'  <programme start="{start_xml}" stop="{stop_xml}" channel="{event["slot"]}">', f'    <title lang="es">{title}</title>', f'    <desc lang="es">{title}</desc>']
+            if logo: lines.append(f'    <icon src="{logo}" />')
             lines.append("  </programme>")
         lines.append("</tv>")
         Path(path).write_text("\n".join(lines), encoding="utf-8")
