@@ -80,6 +80,7 @@ class FootballUpdater:
 
     def _scrape(self, driver, urls, progress):
         time.sleep(2)
+        progress.update("sites", 0, len(urls), "Iniciando parseo de sitios...")
         raw, sites, errors = self.scraper.scrape(driver, urls, progress_callback=lambda done, total, url: progress.update("sites", done, total, f"Sitio parseado: {url}"))
         for error in errors: print(f"Error en {error['url']}: {error['error']}")
         return raw, sites
