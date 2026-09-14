@@ -10,38 +10,51 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+  <button class="close-all-button" type="button" onclick="closeAllChannels(event)">Cerrar todo</button>
+
   <div class="channels-list">
-  {% for channel in channels %}
-    <article class="channel-card{% if not channel.link or channel.proximamente %} static-card{% endif %}"{% if channel.link and not channel.proximamente %} role="button" tabindex="0" aria-expanded="false" onclick="toggleChannel(this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleChannel(this); }"{% endif %}>
-      <div class="channel-time">
-        <span class="field-label">Horario</span>
-        <time>{{ channel.hora }}</time>
+  {% for event in events %}
+    {% set event_index = loop.index0 %}
+    <article class="event-card{% if event.proximamente %} static-event-card{% endif %}"
+      {% if not event.proximamente %}role="button" tabindex="0" aria-expanded="false"
+      onclick="toggleEvent(this)"
+      onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleEvent(this); }"{% endif %}>
+      <div class="event-tournament">
+        {% if event.logo %}<img class="channel-logo" src="{{ event.logo }}" alt="">{% endif %}
+        <span>{{ event.torneo or 'Evento' }}</span>
+        {% if event.proximamente %}<span class="badge">PRÓXIMAMENTE</span>{% endif %}
       </div>
-      <div class="channel-match">
-        <span class="field-label">Match</span>
-        <strong>{{ channel.match }}</strong>
-      </div>
-      <div class="channel-secondary">
-        <div class="channel-tournament">
-          <span class="field-label">Torneo</span>
-          <div class="tournament-name">{% if channel.logo %}<img class="channel-logo" src="{{ channel.logo }}" alt="">{% endif %}<span>{{ channel.torneo or '—' }}</span></div>
-        </div>
-        <div class="channel-source">
-          <span class="field-label">Canal</span>
-          {% if channel.proximamente %}
-            <span class="badge">PRÓXIMAMENTE</span>
-          {% elif channel.link %}
-            <a class="channel-link" href="{{ channel.link }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ channel.canal or 'Ver canal' }}</a>
-            <button class="player-button" title="Picture-in-Picture" aria-label="Picture-in-Picture" data-stream="{{ channel.link }}" data-video-id="video-{{ loop.index }}" onclick="openPip(event, this.dataset.stream, this.dataset.videoId)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-7 7M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/></svg></button>
-          {% else %}
-            <span class="source-unavailable">Sin canal</span>
-          {% endif %}
-        </div>
+      <div class="event-summary">
+        <time>{{ event.hora }}</time>
+        <strong>{{ event.match }}</strong>
       </div>
     </article>
-    {% if channel.link and not channel.proximamente %}<div class="stream-row" hidden><video id="video-{{ loop.index }}" class="inline-player" data-stream="{{ channel.link }}" controls muted playsinline></video></div>{% endif %}
+
+    {% if not event.proximamente %}<div class="event-sources-row" hidden>
+      {% if event.channels %}
+        <div class="source-list">
+        {% for channel in event.channels %}
+          <div class="source-block">
+            <div class="source-item" role="button" tabindex="0" aria-expanded="false"
+              onclick="toggleSource(event, this)"
+              onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSource(event, this); }">
+              {% if channel.logo %}<img class="channel-logo" src="{{ channel.logo }}" alt="">{% endif %}
+              <strong>{{ channel.canal or 'Ver canal' }}</strong>
+              <span class="source-hint">Abrir reproductor</span>
+            </div>
+            <div class="source-player-row" hidden>
+              <video id="video-{{ event_index }}-{{ loop.index0 }}" class="inline-player"
+                data-stream="{{ channel.link }}" controls muted playsinline></video>
+            </div>
+          </div>
+        {% endfor %}
+        </div>
+      {% else %}
+        <span class="source-unavailable">Sin canales disponibles</span>
+      {% endif %}
+    </div>{% endif %}
   {% else %}
-    <p class="empty-state">No hay canales disponibles.</p>
+    <p class="empty-state">No hay eventos disponibles.</p>
   {% endfor %}
   </div>
 </section>

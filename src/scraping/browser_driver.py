@@ -3,6 +3,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 
 load_dotenv(os.getenv("ENV_FILE", ".env"))
 LOGGER = logging.getLogger(__name__)
@@ -20,9 +21,14 @@ class BrowserDriverFactory:
         options.add_argument("--window-size=1440,900")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        chrome_binary = os.getenv("CHROME_BINARY")
+        if chrome_binary:
+            options.binary_location = chrome_binary
         if self._headless(): options.add_argument("--headless=new")
         LOGGER.debug("Creando Chrome: headless=%s", self._headless())
-        driver = webdriver.Chrome(options=options)
+        driver_path = os.getenv("CHROMEDRIVER_PATH")
+        service = Service(executable_path=driver_path) if driver_path else None
+        driver = webdriver.Chrome(service=service, options=options)
         LOGGER.info("Chrome creado para scraping")
         return driver
 

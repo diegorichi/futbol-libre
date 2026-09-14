@@ -82,7 +82,7 @@ def channels_page():
         )
         return render_template(
             "channels.html",
-            channels=service.list_channels(),
+            events=service.list_event_groups(),
             source_dates=service.source_update_dates(),
         )
     except FileNotFoundError:

@@ -35,6 +35,24 @@ class TvApiContractTest(unittest.TestCase):
         self.assertIn("Actualizaciones", response.text)
         self.assertIn("/downloads/futbol-tv.apk", response.text)
 
+    def test_channels_page_contains_close_all_control(self):
+        response = self.client.get("/canales")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Cerrar todo", response.text)
+        self.assertIn("closeAllChannels", response.text)
+
+    def test_upcoming_events_are_not_expandable(self):
+        response = self.client.get("/canales")
+        self.assertEqual(response.status_code, 200)
+        upcoming_cards = [
+            block for block in response.text.split("<article")[1:]
+            if "static-event-card" in block
+        ]
+        self.assertTrue(upcoming_cards)
+        for card in upcoming_cards:
+            self.assertNotIn('role="button"', card)
+            self.assertNotIn("toggleEvent", card)
+
     def test_server_menu_links_tv_app(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)

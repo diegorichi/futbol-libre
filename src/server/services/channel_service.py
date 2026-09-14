@@ -54,6 +54,23 @@ class ChannelService:
             ))
         return sorted(result, key=lambda item: self._nearest_time(item.hora))
 
+    def list_event_groups(self):
+        """Group the web grid by event while preserving each playable source."""
+        groups = {}
+        for channel in self.list_channels():
+            key = (channel.hora, channel.torneo, channel.match, channel.proximamente)
+            group = groups.setdefault(key, {
+                "hora": channel.hora,
+                "torneo": channel.torneo,
+                "match": channel.match,
+                "logo": channel.logo,
+                "proximamente": channel.proximamente,
+                "channels": [],
+            })
+            if channel.link and not channel.proximamente:
+                group["channels"].append(channel)
+        return sorted(groups.values(), key=lambda item: self._nearest_time(item["hora"]))
+
     def _nearest_time(self, value):
         return EventClock().nearest(value, self.now)
 

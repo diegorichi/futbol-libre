@@ -48,15 +48,62 @@ function updateTail(tail, lines) {
   }
 }
 
-function toggleChannel(row) {
-  const streamRow = row.nextElementSibling;
-  const expanded = !streamRow.hidden;
-  streamRow.hidden = expanded;
-  row.setAttribute('aria-expanded', String(!expanded));
-  if (!expanded) {
-    const video = streamRow.querySelector('video');
-    if (video) ensureInlinePlayer(video, video.dataset.stream).catch(error => console.error(error));
+function stopInlinePlayer(video) {
+  if (!video) return;
+  if (document.pictureInPictureElement === video && document.exitPictureInPicture) {
+    document.exitPictureInPicture().catch(error => console.error('No se pudo cerrar Picture-in-Picture:', error));
   }
+  video.pause();
+  if (video._hls) {
+    video._hls.destroy();
+    delete video._hls;
+  }
+  video.removeAttribute('src');
+  video.load();
+  delete video.dataset.loaded;
+}
+
+function collapseSources(sourcesRow) {
+  sourcesRow.querySelectorAll('.source-item[aria-expanded="true"]').forEach(source => {
+    source.setAttribute('aria-expanded', 'false');
+  });
+  sourcesRow.querySelectorAll('.source-player-row').forEach(playerRow => {
+    playerRow.hidden = true;
+    stopInlinePlayer(playerRow.querySelector('video'));
+  });
+}
+
+function toggleEvent(row) {
+  const sourcesRow = row.nextElementSibling;
+  const expanded = !sourcesRow.hidden;
+  if (expanded) collapseSources(sourcesRow);
+  sourcesRow.hidden = expanded;
+  row.setAttribute('aria-expanded', String(!expanded));
+}
+
+function closeAllChannels(event) {
+  if (event) event.stopPropagation();
+  document.querySelectorAll('.event-card[aria-expanded]').forEach(row => {
+    const sourcesRow = row.nextElementSibling;
+    collapseSources(sourcesRow);
+    sourcesRow.hidden = true;
+    row.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function toggleSource(event, source) {
+  event.stopPropagation();
+  const playerRow = source.nextElementSibling;
+  const expanded = !playerRow.hidden;
+  if (expanded) {
+    playerRow.hidden = true;
+    stopInlinePlayer(playerRow.querySelector('video'));
+  } else {
+    playerRow.hidden = false;
+    const video = playerRow.querySelector('video');
+    ensureInlinePlayer(video, video.dataset.stream).catch(error => console.error(error));
+  }
+  source.setAttribute('aria-expanded', String(!expanded));
 }
 
 function ensureInlinePlayer(video, stream) {
@@ -82,7 +129,7 @@ function ensureInlinePlayer(video, stream) {
 function openPip(event, stream, videoId) {
   event.stopPropagation();
   const video = document.getElementById(videoId);
-  video.closest('.stream-row').hidden = false;
+  video.closest('.source-player-row, .stream-row').hidden = false;
   ensureInlinePlayer(video, stream)
     .then(() => video.play())
     .then(() => video.requestPictureInPicture())
