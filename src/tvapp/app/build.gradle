@@ -13,6 +13,16 @@ android {
         versionName "1.2"
         buildConfigField "int", "APP_VERSION_CODE", "12"
     }
+
+    buildTypes {
+        release {
+            // Distribución privada: permite instalar el APK sin crear un secreto en el repo.
+            // Para una publicación pública, reemplazar por una signingConfig propia.
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            debuggable false
+        }
+    }
 }
 
 dependencies {

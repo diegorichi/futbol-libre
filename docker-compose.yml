@@ -9,9 +9,14 @@ services:
       SEARXNG_SEARCH_URL: http://searxng:8080/search
       M3U_FILE: /data/eventos.m3u
       XML_FILE: /data/eventos.xml
+      AGENDA_FILE: /data/agenda_web.json
       TV_EVENTS_FILE: /data/eventos.json
       FUTBOL_LIBRE_URL_FILE: /data/futbol_libre_urls.env
       PROGRESS_FILE: /data/.update-futbollibre.progress.json
+      LOG_LOCATION: /data
+      TV_APP_VERSION_CODE: "12"
+      TV_APP_VERSION_NAME: "1.2"
+      TV_APP_APK_PATH: /app/output/futbol-tv-release.apk
     ports:
       - "8080:8080"
       - "45678:45678/udp"
@@ -24,7 +29,7 @@ services:
     restart: unless-stopped
 
   searxng:
-    image: searxng/searxng:latest
+    image: searxng/searxng:2026.9.12-87bf8c86e
     container_name: futbol-searxng
     ports:
       - "8081:8080"

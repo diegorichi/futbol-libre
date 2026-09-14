@@ -11,7 +11,8 @@ Servidor local y cliente Android TV para consultar eventos deportivos y reproduc
 
 ## Requisitos
 
-- Linux con Python 3, `ffmpeg`, Google Chrome y ChromeDriver/Selenium.
+- Docker Desktop (Mac/Windows) o Docker Engine (Linux) para la instalación recomendada.
+- La instalación nativa con `install.sh` requiere Debian/Ubuntu, Python 3, `ffmpeg`, Google Chrome y ChromeDriver/Selenium.
 - Para la app: Android SDK, Java y `adb`.
 - El servidor y el TV deben estar en la misma red local.
 
@@ -26,6 +27,23 @@ cp .env.example .env
 `.env` contiene configuración local y secretos; no debe versionarse.
 
 ## Instalar el servidor
+
+### Instalación recomendada con Docker
+
+En Mac, Windows o Linux:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+```
+
+La primera actualización se ejecuta manualmente, una vez que los contenedores estén arriba:
+
+```bash
+docker compose run --rm futbol ./update-futbollibre.sh
+```
+
+El catálogo queda guardado en un volumen Docker. Para actualizarlo nuevamente, repetí ese comando.
 
 En un servidor Debian/Ubuntu:
 
@@ -65,20 +83,27 @@ Con `adb` habilitado y el TV conectado:
 
 ```bash
 adb connect IP_DEL_TV:5555
-adb install -r output/futbol-tv-debug.apk
+adb install -r output/futbol-tv-release.apk
 ```
 
 Abrir `Fútbol TV` desde el TV. El servidor debe estar corriendo y ambos dispositivos deben compartir la red local.
+
+Si la TV no permite instalar el APK:
+
+1. Abrí `Configuración > Sistema/Preferencias del dispositivo > Información` y presioná varias veces sobre `Compilación` para habilitar las opciones de desarrollador.
+2. Activá `Depuración por red` o `Depuración USB` y permití instalar desde la aplicación usada para descargar el APK.
+
+La ruta y el nombre pueden variar según el fabricante. La página `/tvapp` muestra la misma advertencia antes de descargar.
 
 ### Generar un APK nuevo
 
 ```bash
 cd src/tvapp
-./gradlew assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk ../../output/futbol-tv-debug.apk
+./gradlew assembleRelease
+cp app/build/outputs/apk/release/app-release.apk ../../output/futbol-tv-release.apk
 ```
 
-El APK generado queda también en `src/tvapp/app/build/outputs/apk/debug/`, pero esa carpeta es un artefacto de Gradle y está ignorada por Git. El archivo distribuible es `output/futbol-tv-debug.apk`.
+El APK generado queda también en `src/tvapp/app/build/outputs/apk/release/`, pero esa carpeta es un artefacto de Gradle y está ignorada por Git. El archivo distribuible es `output/futbol-tv-release.apk`.
 
 ## Instalación y actualización desde el servidor
 
@@ -95,7 +120,7 @@ Las versiones instaladas consultan `/api/v1/app`. Si el servidor anuncia un `ver
 Al publicar una versión nueva hay que incrementar `versionCode` y `versionName` en `src/tvapp/app/build.gradle`, compilar y copiar el APK:
 
 ```bash
-cp src/tvapp/app/build/outputs/apk/debug/app-debug.apk output/futbol-tv-debug.apk
+cp src/tvapp/app/build/outputs/apk/release/app-release.apk output/futbol-tv-release.apk
 ```
 
 ### Probar en emulador

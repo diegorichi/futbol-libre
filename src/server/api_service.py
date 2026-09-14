@@ -34,7 +34,7 @@ mdns = MdnsAdvertiser(port=8080)
 udp_discovery = UdpDiscoveryResponder(http_port=8080)
 TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "12"))
 TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.2")
-TV_APP_APK_PATH = Path(os.getenv("TV_APP_APK_PATH", PROJECT_ROOT / "output/futbol-tv-debug.apk"))
+TV_APP_APK_PATH = Path(os.getenv("TV_APP_APK_PATH", PROJECT_ROOT / "output/futbol-tv-release.apk"))
 if not TV_APP_APK_PATH.is_absolute():
     TV_APP_APK_PATH = PROJECT_ROOT / TV_APP_APK_PATH
 
