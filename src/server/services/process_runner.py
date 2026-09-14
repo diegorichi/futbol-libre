@@ -6,11 +6,11 @@ import time
 
 
 class ProcessRunner:
-    def __init__(self, project_root, status):
+    def __init__(self, project_root, status, log_location=None):
         self.project_root = project_root
         self.status = status
         self.pid_file = os.path.join(project_root, ".update-futbollibre.pid")
-        self.log_file = os.path.join(project_root, ".update-futbollibre.log")
+        self.log_file = os.path.join(log_location or project_root, "log_scrap.log")
         self._start_lock = threading.Lock()
 
     def start(self, script_name, arguments=None):

@@ -24,7 +24,7 @@ load_dotenv(ENV_PATH)
 
 app = Flask(__name__)
 status = TaskStatus()
-runner = ProcessRunner(str(PROJECT_ROOT), status)
+runner = ProcessRunner(str(PROJECT_ROOT), status, os.getenv("LOG_LOCATION"))
 PROGRESS_PATH = Path(os.getenv("PROGRESS_FILE", PROJECT_ROOT / ".update-futbollibre.progress.json"))
 if not PROGRESS_PATH.is_absolute():
     PROGRESS_PATH = PROJECT_ROOT / PROGRESS_PATH

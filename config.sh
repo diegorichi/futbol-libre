@@ -15,15 +15,23 @@ else
 fi
 
 if [ "$SERVER_ENVIRONMENT" -eq 1 ]; then
-    LOG_LOCATION="/var/log"
+    DEFAULT_LOG_LOCATION="/var/log"
 else
-    LOG_LOCATION="$PROJECT_ROOT"
+    DEFAULT_LOG_LOCATION="$PROJECT_ROOT"
 fi
+
+ENV_LOG_LOCATION=""
+if [ -f "$ENV_FILE" ]; then
+    ENV_LOG_LOCATION="$(sed -n 's/^[[:space:]]*LOG_LOCATION[[:space:]]*=[[:space:]]*//p' "$ENV_FILE" | tail -n 1)"
+    ENV_LOG_LOCATION="${ENV_LOG_LOCATION#\"}"
+    ENV_LOG_LOCATION="${ENV_LOG_LOCATION%\"}"
+fi
+LOG_LOCATION="${LOG_LOCATION:-${ENV_LOG_LOCATION:-$DEFAULT_LOG_LOCATION}}"
 
 export ENV_FILE PYTHON_VENV PROJECT_ROOT LOG_LOCATION
 
 CHROME_FILENAME=google-chrome-stable_current_amd64.deb
 CHROME_PACKAGE_URL=https://dl.google.com/linux/direct/$CHROME_FILENAME
 
-LOG_FILE="$LOG_LOCATION/log_diario.log"
+LOG_FILE="$LOG_LOCATION/log_scrap.log"
 LOG_AGENDA="$LOG_LOCATION/agenda.log"

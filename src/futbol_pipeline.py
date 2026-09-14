@@ -2,7 +2,9 @@
 from selenium.common import WebDriverException
 import sys
 import logging
+import time
 from pathlib import Path
+import requests
 from scraping.browser_driver import USER_AGENT, BrowserDriverFactory
 from scraping.site_scraper import SiteScraper
 from scraping.stream_extractor import StreamExtractionPool
@@ -114,6 +116,26 @@ class FootballUpdater:
         if extra_only: events = self.catalog.merge_tv_events(events, tv)
         self.publisher.publish_xml(guide, xml); Path(m3u).write_text(playlist, encoding="utf-8"); self.publisher.publish_tv_events(events, tv)
         self.publisher.publish_agenda(raw, self.config["agenda"], preserve_path=self.config["agenda"] if extra_only else None)
+        self._refresh_threadfin()
+
+    def _refresh_threadfin(self):
+        commands = ("update.m3u", "update.xmltv", "update.xepg")
+        for command in commands:
+            try:
+                response = requests.post(
+                    self.config["threadfin"],
+                    json={"cmd": command},
+                    timeout=30,
+                )
+                if response.status_code == 200:
+                    LOGGER.info("Threadfin actualizado: comando=%s", command)
+                elif response.status_code == 423:
+                    LOGGER.warning("Threadfin bloqueado: comando=%s", command)
+                else:
+                    LOGGER.error("Threadfin rechazó comando=%s status=%s respuesta=%s", command, response.status_code, response.text)
+            except requests.RequestException as error:
+                LOGGER.error("No se pudo actualizar Threadfin: %s", error)
+            time.sleep(2)
 
 
 if __name__ == "__main__":
