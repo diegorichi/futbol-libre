@@ -1,9 +1,8 @@
 """Caso de uso de actualización de Fútbol Libre."""
+from selenium.common import WebDriverException
 import sys
-import time
 import logging
 from pathlib import Path
-from selenium.common.exceptions import WebDriverException
 from scraping.browser_driver import USER_AGENT, BrowserDriverFactory
 from scraping.site_scraper import SiteScraper
 from scraping.stream_extractor import StreamExtractionPool
@@ -41,9 +40,8 @@ class FootballUpdater:
         progress = ProgressReporter(self.config["progress"]); progress.reset()
         try:
             urls = self._requested_urls(extra_only)
-            valid, invalid = self._validate_sites(driver, urls)
+            raw, sites, valid, invalid = self._scrape(driver, urls, progress)
             self._require_valid_sites(valid, progress)
-            raw, sites = self._scrape(driver, valid, progress)
             active, upcoming = self.projector.classify(raw)
             empty = [] if extra_only else self.validator.without_events(valid, sites)
             self.notifier.notify([url for url in valid if url not in empty], invalid + empty)
@@ -67,11 +65,6 @@ class FootballUpdater:
             return [self.config["extra_url"].strip()]
         return [url.strip() for url in self.config["urls"].split(",") if url.strip()]
 
-    def _validate_sites(self, driver, urls):
-        valid, invalid = self.validator.validate(driver, urls)
-        for url, error in invalid: print(f"Fallo en {url}: {error}")
-        return valid, [url for url, _ in invalid]
-
     @staticmethod
     def _require_valid_sites(valid, progress):
         if valid: return
@@ -79,10 +72,20 @@ class FootballUpdater:
         raise RuntimeError("Ningún dominio de la lista está operativo.")
 
     def _scrape(self, driver, urls, progress):
-        time.sleep(2)
-        raw, sites, errors = self.scraper.scrape(driver, urls, progress_callback=lambda done, total, url: progress.update("sites", done, total, f"Sitio parseado: {url}"))
-        for error in errors: print(f"Error en {error['url']}: {error['error']}")
-        return raw, sites
+        progress.update("sites", 0, len(urls), "Iniciando parseo de sitios...")
+        raw, sites, errors = self.scraper.scrape(
+            driver,
+            urls,
+            validation_callback=self.validator.is_unavailable,
+            progress_callback=lambda done, total, url: progress.update(
+                "sites", done, total, f"Sitio procesado: {url}"
+            ),
+        )
+        for error in errors:
+            print(f"Fallo en {error['url']}: {error['error']}")
+        valid = [site["url"] for site in sites]
+        invalid = [error["url"] for error in errors if error.get("phase") == "validation"]
+        return raw, sites, valid, invalid
 
     def _extract_streams(self, driver, active, progress):
         urls = list(dict.fromkeys(item["url"] for item in active))

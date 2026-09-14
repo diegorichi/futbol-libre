@@ -91,6 +91,13 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         pipView = new PlayerView(this);
         pipView.setUseController(false);
         pipView.setVisibility(View.GONE);
+        pipView.setOnTouchListener((view, event) -> {
+            if (state != TvScreenView.DUAL || !screen.isCompactLayout()) return false;
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                promotePipToPrimary();
+            }
+            return true;
+        });
         root.addView(pipView, new FrameLayout.LayoutParams(-1, -1));
         playback = new PlaybackController(this, playerView, pipView, message -> {
             playerMessage = message;
@@ -290,6 +297,16 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         screen.invalidate();
     }
 
+    private void promotePipToPrimary() {
+        if (!playback.swap()) {
+            Toast.makeText(this, "Esperá a que PiP termine de cargar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int event = selectedEvent; selectedEvent = pipEvent; pipEvent = event;
+        int source = selectedSource; selectedSource = pipSource; pipSource = source;
+        screen.showPlaybackOverlay();
+    }
+
     private void stopDiscovery() {
         if (nsd != null && discovery != null) {
             try { nsd.stopServiceDiscovery(discovery); } catch (Exception ignored) { }
@@ -339,16 +356,16 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         } else if (state == TvScreenView.UPDATE) {
             installPendingUpdate();
         } else if (state == TvScreenView.EVENTS && !events.isEmpty()) {
-            int item = eventOffset + (int) ((y - (screen.isCompactLayout() ? screen.compactEventListTopDp() - 44 : 115)) / (screen.isCompactLayout() ? screen.compactEventRowDp() : 52));
+            int item = eventOffset + (int) ((y - (screen.isCompactLayout() ? screen.compactEventListTopDp() - 44 : 101) - screen.dragOffsetDp()) / (screen.isCompactLayout() ? screen.compactEventRowDp() : 72));
             if (item >= 0 && item < events.size()) { selectedEvent = item; showSources(); }
         } else if (state == TvScreenView.SOURCES && !events.isEmpty()) {
-            int item = sourceOffset + (int) ((y - 145) / 48);
+            int item = sourceOffset + (int) ((y - 145 - screen.dragOffsetDp()) / 48);
             if (item >= 0 && item < events.get(selectedEvent).sources.size()) { selectedSource = item; preview(events.get(selectedEvent).sources.get(item)); }
         } else if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
-            int item = pipEventOffset + (int) ((y - 115) / 52);
+            int item = pipEventOffset + (int) ((y - (screen.isCompactLayout() ? screen.compactEventListTopDp() - 44 : 115) - screen.dragOffsetDp()) / (screen.isCompactLayout() ? screen.compactEventRowDp() : 52));
             if (item >= 0 && item < events.size()) { pipEvent = item; showPipSources(); }
         } else if (state == TvScreenView.PIP_SOURCES && !events.isEmpty() && !events.get(pipEvent).sources.isEmpty()) {
-            int item = pipSourceOffset + (int) ((y - 145) / 48);
+            int item = pipSourceOffset + (int) ((y - 145 - screen.dragOffsetDp()) / 48);
             if (item >= 0 && item < events.get(pipEvent).sources.size()) { pipSource = item; startPip(events.get(pipEvent).sources.get(item)); }
         } else if (state == TvScreenView.PREVIEW && playback.isReady()) {
             // La acción de la derecha del panel inferior agrega PiP; el resto
@@ -397,8 +414,61 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     @Override public String updateStatus() { return updateStatus; }
     @Override public void onBack() { back(); }
     @Override public void onTouch(float x, float y) { tap(x, y); }
+    @Override public void onEventTap(int index, boolean forPip) {
+        if (index < 0 || index >= events.size()) return;
+        if (forPip) {
+            pipEvent = index;
+            showPipSources();
+        } else {
+            selectedEvent = index;
+            showSources();
+        }
+    }
+    @Override public void onSourceTap(int index, boolean forPip) {
+        if (forPip) {
+            if (pipEvent >= 0 && pipEvent < events.size() && index >= 0 && index < events.get(pipEvent).sources.size()) {
+                pipSource = index;
+                startPip(events.get(pipEvent).sources.get(index));
+            }
+        } else if (selectedEvent >= 0 && selectedEvent < events.size()
+                && index >= 0 && index < events.get(selectedEvent).sources.size()) {
+            selectedSource = index;
+            preview(events.get(selectedEvent).sources.get(index));
+        }
+    }
     @Override public void onSwipe(boolean down) {
         onDpad(down ? KeyEvent.KEYCODE_DPAD_DOWN : KeyEvent.KEYCODE_DPAD_UP);
+    }
+    @Override public int onScroll(float deltaY) {
+        if (!screen.isCompactLayout()) return 0;
+        int steps = Math.round(-deltaY / (state == TvScreenView.EVENTS || state == TvScreenView.PIP_EVENTS
+                ? screen.compactEventRowDp() : 48f));
+        if (steps == 0) return 0;
+        int oldOffset = 0;
+        if (state == TvScreenView.EVENTS && !events.isEmpty()) {
+            oldOffset = eventOffset;
+            eventOffset = Math.max(0, Math.min(events.size() - screen.visibleRows(), eventOffset + steps));
+            selectedEvent = NavigationState.clamp(eventOffset + listFocusPosition(), events.size());
+        } else if (state == TvScreenView.SOURCES && !events.isEmpty()) {
+            oldOffset = sourceOffset;
+            int size = events.get(selectedEvent).sources.size();
+            sourceOffset = Math.max(0, Math.min(size - screen.visibleRows(), sourceOffset + steps));
+            selectedSource = NavigationState.clamp(sourceOffset + listFocusPosition(), size);
+        } else if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
+            oldOffset = pipEventOffset;
+            pipEventOffset = Math.max(0, Math.min(events.size() - screen.visibleRows(), pipEventOffset + steps));
+            pipEvent = NavigationState.clamp(pipEventOffset + listFocusPosition(), events.size());
+        } else if (state == TvScreenView.PIP_SOURCES && !events.isEmpty()) {
+            oldOffset = pipSourceOffset;
+            int size = events.get(pipEvent).sources.size();
+            pipSourceOffset = Math.max(0, Math.min(size - screen.visibleRows(), pipSourceOffset + steps));
+            pipSource = NavigationState.clamp(pipSourceOffset + listFocusPosition(), size);
+        }
+        screen.invalidate();
+        if (state == TvScreenView.EVENTS) return eventOffset - oldOffset;
+        if (state == TvScreenView.SOURCES) return sourceOffset - oldOffset;
+        if (state == TvScreenView.PIP_EVENTS) return pipEventOffset - oldOffset;
+        return pipSourceOffset - oldOffset;
     }
 
     @Override public void onDpad(int keyCode) {
@@ -435,9 +505,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
             if (state == TvScreenView.PREVIEW) { previewAction = keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? 0 : 1; screen.invalidate(); return; }
             if (state == TvScreenView.DUAL && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                int event = selectedEvent; selectedEvent = pipEvent; pipEvent = event;
-                int source = selectedSource; selectedSource = pipSource; pipSource = source;
-                playback.swap(); screen.showPlaybackOverlay(); return;
+                promotePipToPrimary(); return;
             }
         }
     }

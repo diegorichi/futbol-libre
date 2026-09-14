@@ -126,8 +126,16 @@ public final class PlaybackController {
         if (pip != null) pip.play();
     }
 
-    public void swap() {
-        if (pip == null || primary == null) return;
+    public boolean canSwap() {
+        return primary != null && pip != null
+                && primary.getPlaybackState() == Player.STATE_READY
+                && pip.getPlaybackState() == Player.STATE_READY;
+    }
+
+    public boolean swap() {
+        // No intercambiar superficies mientras PiP está en buffering: Media3
+        // puede dejar ambas vistas negras hasta que termine la preparación.
+        if (!canSwap()) return false;
         // Media3 puede conservar la superficie anterior si dos PlayerView se
         // intercambian directamente. Desacoplamos primero ambas vistas.
         mainView.setPlayer(null);
@@ -142,6 +150,7 @@ public final class PlaybackController {
         primary.play();
         pip.play();
         setDualBounds();
+        return true;
     }
 
     public void release() { releaseAll(); }

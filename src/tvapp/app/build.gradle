@@ -9,9 +9,9 @@ android {
         applicationId "com.futbol.tv"
         minSdk 23
         targetSdk 35
-        versionCode 5
-        versionName "0.5"
-        buildConfigField "int", "APP_VERSION_CODE", "5"
+        versionCode 12
+        versionName "1.2"
+        buildConfigField "int", "APP_VERSION_CODE", "12"
     }
 }
 
@@ -20,5 +20,6 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer-hls:1.4.1"
     implementation "androidx.media3:media3-ui:1.4.1"
     implementation "androidx.core:core:1.13.1"
+    implementation "androidx.recyclerview:recyclerview:1.3.2"
     testImplementation "junit:junit:4.13.2"
 }

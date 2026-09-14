@@ -14,7 +14,7 @@ source `pwd`/config.sh
 
 echo "--- Iniciando proceso diario $(date) ---"
 
-$PYTHON_VENV -m futbol_pipeline "$@"
+PYTHONPATH="$PROJECT_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON_VENV" -m futbol_pipeline "$@"
 return_code=$?
 
 if [ "$return_code" -eq 0 ]; then
