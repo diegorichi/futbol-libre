@@ -24,7 +24,7 @@ load_dotenv(ENV_PATH)
 
 app = Flask(__name__)
 status = TaskStatus()
-runner = ProcessRunner(str(PROJECT_ROOT), status)
+runner = ProcessRunner(str(PROJECT_ROOT), status, os.getenv("LOG_LOCATION"))
 progress = ProgressReporter(str(PROJECT_ROOT / ".update-futbollibre.progress.json"))
 runner.recover()
 mdns = MdnsAdvertiser(port=8080)
