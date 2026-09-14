@@ -1,0 +1,24 @@
+# Configuración local y secretos
+.env
+
+# Archivos generados localmente
+__pycache__/
+*.py[cod]
+*.log
+.update-futbollibre.pid
+.update-futbollibre.log
+.update-futbollibre.lock
+.update-futbollibre.progress.json
+futbol_libre_urls.env
+futbol_libre_urls.env.tmp
+
+# Android Studio / Gradle
+src/tvapp/.gradle/
+src/tvapp/.idea/
+src/tvapp/local.properties
+src/tvapp/**/*.iml
+**/build/
+
+# Catálogo generado para clientes TV
+eventos.*
+agenda_*.json

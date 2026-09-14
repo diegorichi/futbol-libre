@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card wide">
+  <h1>Fútbol TV</h1>
+  <p class="muted">Instalación para Android TV · versión {{ version }}</p>
+
+  <p class="warning"><strong>Importante:</strong> este APK es de distribución privada. En algunas TV hay que habilitar
+    <em>Opciones de desarrollador</em>, <em>Depuración por red/ADB</em> y <em>Permitir desde esta fuente</em> para el
+    navegador o explorador que descargue el archivo. Los nombres exactos cambian según la marca y el modelo.</p>
+
+  <h2>Primera instalación</h2>
+  <ol>
+    <li>Descargá el APK con el botón de abajo.</li>
+    <li>Cuando Android lo solicite, permití instalar aplicaciones desde esta fuente.</li>
+    <li>Aceptá la instalación y abrí <strong>Fútbol TV</strong>.</li>
+    <li>La app detectará automáticamente el servidor en la red local.</li>
+  </ol>
+  <p><a class="button" href="{{ url_for('tv_app_download') }}">Descargar APK</a></p>
+
+  <h2>Permiso de instalación</h2>
+  <p>Si Android bloquea la instalación, abrí la configuración que aparece en el aviso y habilitá <strong>Permitir desde esta fuente</strong> para el navegador o explorador de archivos que usaste.</p>
+
+  <h2>Actualizaciones</h2>
+  <ol>
+    <li>La app consulta automáticamente si hay una versión nueva al iniciar.</li>
+    <li>Si existe, muestra la pantalla de actualización.</li>
+    <li>Al presionar OK descarga el APK y abre el instalador oficial de Android.</li>
+    <li>Confirmá la instalación cuando Android lo solicite.</li>
+  </ol>
+  <p class="muted">La actualización conserva la configuración de la aplicación.</p>
+
+  <h2>Si no encuentra el servidor</h2>
+  <p>Verificá que la TV y el servidor estén conectados a la misma red local y que el servidor esté encendido.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Actualizar otros sistemas</h1>
+  <p class="muted">Ejecuta integraciones opcionales y actualiza las fuentes.</p>
+  <div class="actions">
+    <button onclick="updateSystem('ntfy', this)">Actualizar NTFY</button>
+    <button onclick="updateSystem('sites', this)">Actualizar sitios desde SearXNG</button>
+  </div>
+  <p id="system-status" class="status"></p>
+</section>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

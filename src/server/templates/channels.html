@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card wide channels-page">
+  <div class="channels-heading">
+    <div>
+      <p class="section-kicker">Agenda deportiva</p>
+      <h1>Canales</h1>
+    </div>
+    <p class="muted source-dates">XML {{ source_dates.xml }} · M3U {{ source_dates.m3u }}</p>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <button class="close-all-button" type="button" onclick="closeAllChannels(event)">Cerrar todo</button>
+
+  <div class="channels-list">
+  {% for event in events %}
+    {% set event_index = loop.index0 %}
+    <article class="event-card{% if event.proximamente %} static-event-card{% endif %}"
+      {% if not event.proximamente %}role="button" tabindex="0" aria-expanded="false"
+      onclick="toggleEvent(this)"
+      onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleEvent(this); }"{% endif %}>
+      <div class="event-tournament">
+        {% if event.logo %}<img class="channel-logo" src="{{ event.logo }}" alt="">{% endif %}
+        <span>{{ event.torneo or 'Evento' }}</span>
+        {% if event.proximamente %}<span class="badge">PRÓXIMAMENTE</span>{% endif %}
+      </div>
+      <div class="event-summary">
+        <time>{{ event.hora }}</time>
+        <strong>{{ event.match }}</strong>
+      </div>
+    </article>
+
+    {% if not event.proximamente %}<div class="event-sources-row" hidden>
+      {% if event.channels %}
+        <div class="source-list">
+        {% for channel in event.channels %}
+          <div class="source-block">
+            <div class="source-item" role="button" tabindex="0" aria-expanded="false"
+              onclick="toggleSource(event, this)"
+              onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSource(event, this); }">
+              {% if channel.logo %}<img class="channel-logo" src="{{ channel.logo }}" alt="">{% endif %}
+              <strong>{{ channel.canal or 'Ver canal' }}</strong>
+              <span class="source-hint">Abrir reproductor</span>
+            </div>
+            <div class="source-player-row" hidden>
+              <video id="video-{{ event_index }}-{{ loop.index0 }}" class="inline-player"
+                data-stream="{{ channel.link }}" controls muted playsinline></video>
+            </div>
+          </div>
+        {% endfor %}
+        </div>
+      {% else %}
+        <span class="source-unavailable">Sin canales disponibles</span>
+      {% endif %}
+    </div>{% endif %}
+  {% else %}
+    <p class="empty-state">No hay eventos disponibles.</p>
+  {% endfor %}
+  </div>
+</section>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}
