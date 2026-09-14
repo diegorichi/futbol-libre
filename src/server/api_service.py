@@ -130,7 +130,8 @@ def update_url():
         urls_file.parent.mkdir(parents=True, exist_ok=True)
         if not only_extra:
             set_key(str(urls_file), "FUTBOL_LIBRE_URL", new_url)
-        set_key(str(urls_file), "FUTBOL_LIBRE_EXTRA_URL", extra_url)
+        if only_extra or extra_url:
+            set_key(str(urls_file), "FUTBOL_LIBRE_EXTRA_URL", extra_url)
         progress.reset()
         arguments = ["--extra-only"] if only_extra else []
         if not runner.start("update-futbollibre.sh", arguments):

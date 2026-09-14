@@ -1,25 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
-  <h1>Actualizar URL y ejecutar</h1>
-  <p class="muted">Guarda la URL y ejecuta la actualización de Fútbol Libre.</p>
-  <label for="url">FUTBOL_LIBRE_URL</label>
-  <input id="url" value="{{ current_url }}" placeholder="https://ejemplo.com/">
-  <label for="extra-url">Sitio adicional manual (opcional)</label>
-  <input id="extra-url" value="{{ current_extra_url }}" placeholder="https://otro-sitio.example/">
-  <div class="actions">
-    <button id="run" onclick="updateUrl()">Actualizar y sincronizar</button>
-    <button id="run-extra" onclick="processExtra()">Procesar sitio adicional</button>
-    <button id="stop" class="danger" onclick="stopUpdate()">Detener proceso actual</button>
+<section class="card wide executor-page">
+  <div class="channels-heading">
+    <div>
+      <p class="section-kicker">Operación del servidor</p>
+      <h1>Procesar fuentes</h1>
+    </div>
+    <p class="muted executor-intro">Elegí un proceso. Ambos actualizan las fuentes y la agenda.</p>
   </div>
-  <p id="status" class="status"></p>
-  <div class="progress-row">
-    <label for="sites-progress">Parseo de sitios <span id="sites-progress-value" class="progress-value">0%</span></label>
-    <progress id="sites-progress" max="100" value="0"></progress>
-    <label for="streams-progress">Extracción de m3u8 <span id="streams-progress-value" class="progress-value">0%</span></label>
-    <progress id="streams-progress" max="100" value="0"></progress>
+
+  <div class="executor-options">
+    <section class="executor-option">
+      <p class="section-kicker">Entrada principal</p>
+      <h2>Procesar todas las URL</h2>
+      <p class="muted">Procesa la lista completa configurada. Si hay varias, separalas con comas.</p>
+      <label for="url">URLs principales</label>
+      <input id="url" value="{{ current_url }}" placeholder="https://sitio-1.example/, https://sitio-2.example/">
+      <button id="run" type="button" onclick="updateUrl()">Procesar todas las URL</button>
+    </section>
+
+    <section class="executor-option">
+      <p class="section-kicker">Entrada puntual</p>
+      <h2>Procesar URL extra</h2>
+      <p class="muted">Procesa solamente este sitio y lo incorpora a las fuentes existentes.</p>
+      <label for="extra-url">URL extra</label>
+      <input id="extra-url" value="{{ current_extra_url }}" placeholder="https://otro-sitio.example/">
+      <button id="run-extra" type="button" onclick="processExtra()">Procesar URL extra</button>
+    </section>
   </div>
-  <pre id="tail" class="tail" aria-label="Últimas líneas del proceso"></pre>
+
+  <section class="executor-monitor" aria-labelledby="monitor-title">
+    <div class="monitor-heading">
+      <div>
+        <p class="section-kicker">Estado</p>
+        <h2 id="monitor-title">Proceso actual</h2>
+      </div>
+      <button id="stop" class="danger" type="button" onclick="stopUpdate()">Detener proceso</button>
+    </div>
+    <p id="status" class="status" role="status"></p>
+    <div class="progress-row">
+      <label for="sites-progress">Parseo de sitios <span id="sites-progress-value" class="progress-value">0%</span></label>
+      <progress id="sites-progress" max="100" value="0"></progress>
+      <label for="streams-progress">Extracción de m3u8 <span id="streams-progress-value" class="progress-value">0%</span></label>
+      <progress id="streams-progress" max="100" value="0"></progress>
+    </div>
+    <details class="log-disclosure">
+      <summary>Ver log del proceso</summary>
+      <pre id="tail" class="tail" aria-label="Últimas líneas del proceso"></pre>
+    </details>
+  </section>
 </section>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

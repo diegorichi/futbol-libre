@@ -17,7 +17,7 @@ public final class SourceRowView extends View {
     private boolean selected;
 
     public SourceRowView(Context context) { super(context); density = getResources().getDisplayMetrics().density; setMinimumHeight(dp(56)); }
-    public void bind(Source source, boolean selected) { this.source = source; this.selected = selected; invalidate(); }
+    public void bind(Source source, boolean selected) { this.source = source; this.selected = selected; setContentDescription(source.name); invalidate(); }
     private int dp(float value) { return (int) (value * density + 0.5f); }
     @Override protected void onDraw(Canvas c) {
         if (source == null) return;

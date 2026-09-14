@@ -71,6 +71,7 @@ function collapseSources(sourcesRow) {
     playerRow.hidden = true;
     stopInlinePlayer(playerRow.querySelector('video'));
   });
+  sourcesRow.querySelectorAll('.player-button').forEach(button => { button.hidden = true; });
 }
 
 function toggleEvent(row) {
@@ -93,7 +94,7 @@ function closeAllChannels(event) {
 
 function toggleSource(event, source) {
   event.stopPropagation();
-  const playerRow = source.nextElementSibling;
+  const playerRow = source.closest('.source-block').querySelector('.source-player-row');
   const expanded = !playerRow.hidden;
   if (expanded) {
     playerRow.hidden = true;
@@ -101,8 +102,15 @@ function toggleSource(event, source) {
   } else {
     playerRow.hidden = false;
     const video = playerRow.querySelector('video');
-    ensureInlinePlayer(video, video.dataset.stream).catch(error => console.error(error));
+    const status = playerRow.querySelector('.player-status');
+    if (status) { status.hidden = true; status.textContent = ''; }
+    ensureInlinePlayer(video, video.dataset.stream).catch(error => {
+      if (status) { status.hidden = false; status.textContent = 'No se pudo cargar este canal. Probá otra fuente.'; }
+      console.error(error);
+    });
   }
+  const playerButton = source.closest('.source-block').querySelector('.player-button');
+  if (playerButton) playerButton.hidden = expanded;
   source.setAttribute('aria-expanded', String(!expanded));
 }
 
@@ -126,17 +134,42 @@ function ensureInlinePlayer(video, stream) {
   }).then(() => { video.dataset.loaded = 'true'; });
 }
 
-function openPip(event, stream, videoId) {
+function openNewWindow(event, stream) {
   event.stopPropagation();
-  const video = document.getElementById(videoId);
-  video.closest('.source-player-row, .stream-row').hidden = false;
-  ensureInlinePlayer(video, stream)
-    .then(() => video.play())
-    .then(() => video.requestPictureInPicture())
-    .catch(error => console.error('No se pudo abrir Picture-in-Picture:', error));
+  const playerWindow = window.open('', '_blank');
+  if (!playerWindow) {
+    const status = event.currentTarget.closest('.source-block').querySelector('.player-status');
+    if (status) { status.hidden = false; status.textContent = 'El navegador bloqueó la ventana. Permití ventanas emergentes para abrir el canal.'; }
+    return;
+  }
+
+  const safeStream = JSON.stringify(stream).replace(/</g, '\\u003c');
+  playerWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Fútbol Libre</title>
+    <style>html,body{height:100%;margin:0;background:#000}video{width:100%;height:100%;display:block}</style></head>
+    <body><video id="player" controls autoplay muted playsinline></video>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script><script>
+      const video = document.getElementById('player');
+      const stream = ${safeStream};
+      video.muted = true;
+      if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = stream;
+      else if (window.Hls && Hls.isSupported()) { const hls = new Hls(); hls.loadSource(stream); hls.attachMedia(video); }
+      else document.body.textContent = 'Este navegador no soporta HLS.';
+    </script></body></html>`);
+  playerWindow.document.close();
 }
 
-function pollStatus(button, status, tail) {
+function openPip(event, stream, videoId) {
+  openNewWindow(event, stream, videoId);
+}
+
+function setExecutionButtonsDisabled(disabled) {
+  ['run', 'run-extra'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.disabled = disabled;
+  });
+}
+
+function pollStatus(status, tail) {
   fetch('/status').then(response => response.json()).then(data => {
     updateTail(tail, data.output);
     updateProgress(data.progress);
@@ -145,11 +178,11 @@ function pollStatus(button, status, tail) {
       return;
     }
     clearInterval(poller);
-    button.disabled = false;
+    setExecutionButtonsDisabled(false);
     setStatus(status, data.error ? data.message : 'Proceso terminado correctamente.', data.error ? 'error' : 'success');
   }).catch(() => {
     clearInterval(poller);
-    button.disabled = false;
+    setExecutionButtonsDisabled(false);
     setStatus(status, 'No se pudo consultar el estado.', 'error');
   });
 }
@@ -159,24 +192,23 @@ function updateUrl() {
   const status = document.getElementById('status');
   const tail = document.getElementById('tail');
   const url = document.getElementById('url').value.trim();
-  const extraUrl = document.getElementById('extra-url').value.trim();
   if (!url) return setStatus(status, 'La URL es obligatoria.', 'error');
-  button.disabled = true;
+  setExecutionButtonsDisabled(true);
   resetTail(tail);
-  fetch('/update-url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, extra_url: extraUrl}) })
+  fetch('/update-url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url}) })
     .then(response => response.json().then(data => ({ok: response.ok, data})))
     .then(result => {
       if (!result.ok && result.data.running) {
         updateTail(tail, result.data.status.output || []);
         updateProgress(result.data.status.progress);
-        poller = setInterval(() => pollStatus(button, status, tail), 1000);
+        poller = setInterval(() => pollStatus(status, tail), 1000);
         throw new Error('Ya hay un proceso corriendo; mostrando su log.');
       }
       if (!result.ok) throw new Error(result.data.error || 'No se pudo iniciar.');
-      poller = setInterval(() => pollStatus(button, status, tail), 1000);
+      poller = setInterval(() => pollStatus(status, tail), 1000);
     }).catch(error => {
       if (!error.message.startsWith('Ya hay un proceso')) {
-        button.disabled = false;
+        setExecutionButtonsDisabled(false);
         setStatus(status, error.message, 'error');
       }
     });
@@ -188,7 +220,7 @@ function processExtra() {
   const tail = document.getElementById('tail');
   const extraUrl = document.getElementById('extra-url').value.trim();
   if (!extraUrl) return setStatus(status, 'La URL adicional es obligatoria.', 'error');
-  button.disabled = true;
+  setExecutionButtonsDisabled(true);
   resetTail(tail);
   fetch('/update-url', {
     method: 'POST',
@@ -200,21 +232,20 @@ function processExtra() {
       if (!result.ok && result.data.running) {
         updateTail(tail, result.data.status.output || []);
         updateProgress(result.data.status.progress);
-        poller = setInterval(() => pollStatus(button, status, tail), 1000);
+        poller = setInterval(() => pollStatus(status, tail), 1000);
         throw new Error('Ya hay un proceso corriendo; mostrando su log.');
       }
       if (!result.ok) throw new Error(result.data.error || 'No se pudo iniciar.');
-      poller = setInterval(() => pollStatus(button, status, tail), 1000);
+      poller = setInterval(() => pollStatus(status, tail), 1000);
     }).catch(error => {
       if (!error.message.startsWith('Ya hay un proceso')) {
-        button.disabled = false;
+        setExecutionButtonsDisabled(false);
         setStatus(status, error.message, 'error');
       }
     });
 }
 
 function stopUpdate() {
-  const runButton = document.getElementById('run');
   const stopButton = document.getElementById('stop');
   const status = document.getElementById('status');
   stopButton.disabled = true;
@@ -223,24 +254,27 @@ function stopUpdate() {
     .then(result => {
       stopButton.disabled = false;
       if (!result.ok) return setStatus(status, result.data.error, 'error');
-      runButton.disabled = false;
+      setExecutionButtonsDisabled(false);
       setStatus(status, result.data.message, 'success');
       if (poller) clearInterval(poller);
     }).catch(() => { stopButton.disabled = false; setStatus(status, 'No se pudo detener el proceso.', 'error'); });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const runButton = document.getElementById('run');
   const status = document.getElementById('status');
   const tail = document.getElementById('tail');
   fetch('/status').then(response => response.json()).then(data => {
     if (data.is_running) {
-      runButton.disabled = true;
+      setExecutionButtonsDisabled(true);
       updateTail(tail, data.output);
       updateProgress(data.progress);
-      poller = setInterval(() => pollStatus(runButton, status, tail), 1000);
-    }
-  });
+      poller = setInterval(() => pollStatus(status, tail), 1000);
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  document.querySelectorAll('video').forEach(stopInlinePlayer);
+});
 });
 
 function updateSystem(target, button) {

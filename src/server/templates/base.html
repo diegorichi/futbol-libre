@@ -8,12 +8,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
-  <nav>
-    <a href="{{ url_for('executor_page') }}">Actualizar URL</a>
-    <a href="{{ url_for('channels_page') }}">Canales</a>
-    <a href="{{ url_for('agenda_page') }}">Agenda</a>
-    <a href="{{ url_for('tv_app_page') }}">Fútbol TV</a>
-    <a href="{{ url_for('systems_page') }}">Otros sistemas</a>
+  <nav aria-label="Navegación principal">
+    <a {% if request.endpoint == 'executor_page' %}aria-current="page"{% endif %} href="{{ url_for('executor_page') }}">Actualizar URL</a>
+    <a {% if request.endpoint == 'channels_page' %}aria-current="page"{% endif %} href="{{ url_for('channels_page') }}">Canales</a>
+    <a {% if request.endpoint == 'agenda_page' %}aria-current="page"{% endif %} href="{{ url_for('agenda_page') }}">Agenda</a>
+    <a {% if request.endpoint == 'tv_app_page' %}aria-current="page"{% endif %} href="{{ url_for('tv_app_page') }}">Fútbol TV</a>
+    <a {% if request.endpoint == 'systems_page' %}aria-current="page"{% endif %} href="{{ url_for('systems_page') }}">Otros sistemas</a>
   </nav>
   <main>{% block content %}{% endblock %}</main>
 </body>

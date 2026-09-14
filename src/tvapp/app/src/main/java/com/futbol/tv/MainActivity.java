@@ -370,8 +370,13 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         } else if (state == TvScreenView.PREVIEW && playback.isReady()) {
             // La acción de la derecha del panel inferior agrega PiP; el resto
             // abre el reproductor principal, igual que OK en el control remoto.
-            boolean pip = x >= (screen.getWidth() / screen.getResources().getDisplayMetrics().density) / 2f
-                    && y >= (screen.getHeight() / screen.getResources().getDisplayMetrics().density) - 145f;
+            float height = screen.getHeight() / screen.getResources().getDisplayMetrics().density;
+            float half = (screen.getWidth() / screen.getResources().getDisplayMetrics().density) / 2f;
+            boolean actionArea = screen.isCompactLayout()
+                    ? y >= height - 160f && y <= height - 100f
+                    : y >= height - 96f;
+            if (!actionArea) return;
+            boolean pip = x >= half;
             if (pip) {
                 openPipEventPicker();
             } else {

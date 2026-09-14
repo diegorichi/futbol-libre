@@ -28,6 +28,7 @@ public final class EventRowView extends View {
     public void bind(Event event, boolean selected) {
         this.event = event;
         this.selected = selected;
+        setContentDescription(event.title + ", " + event.startsAt + ", " + event.sources.size() + " fuentes");
         invalidate();
     }
 

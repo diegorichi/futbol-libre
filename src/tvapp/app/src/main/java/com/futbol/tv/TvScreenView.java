@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Handler;
+import android.os.Build;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,6 +56,7 @@ public final class TvScreenView extends FrameLayout {
     private float ballRotation;
     private final Runnable ballAnimation = new Runnable() {
         @Override public void run() {
+            if (host.state() != SEARCHING) return;
             ballRotation = (ballRotation + 8f) % 360f;
             invalidate();
             postDelayed(this, 45);
@@ -168,6 +170,8 @@ public final class TvScreenView extends FrameLayout {
         if (state != lastState) {
             dragY = 0;
             lastState = state;
+            removeCallbacks(ballAnimation);
+            if (state == SEARCHING) post(ballAnimation);
         }
         if (state == PREVIEW || state == PLAYER || state == DUAL) {
             if (state == PREVIEW) drawPreview(c);
@@ -284,7 +288,7 @@ public final class TvScreenView extends FrameLayout {
     @Override protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         removeCallbacks(ballAnimation);
-        post(ballAnimation);
+        if (host.state() == SEARCHING) post(ballAnimation);
     }
 
     @Override protected void onDetachedFromWindow() {
@@ -390,7 +394,9 @@ public final class TvScreenView extends FrameLayout {
         }
         text(c, position, 60, getHeight() / density - 112, 15, Color.rgb(94,234,212), true);
         text(c, host.playerMessage(), 60, getHeight() / density - 88, 18, Color.WHITE, true);
-        text(c, host.previewAction() == 0 ? "[Ver en pantalla completa]" : "[Agregar segundo evento en PiP]", 60, getHeight() / density - 53, 18, Color.rgb(94,234,212), true);
+        float buttonY = getHeight() / density - 94;
+        actionButton(c, 60, buttonY, 260, "Pantalla completa", host.previewAction() == 0);
+        actionButton(c, 332, buttonY, 260, "Agregar segundo evento", host.previewAction() == 1);
         text(c, "◀ ▶ elegir acción · ▲ ▼ cambiar fuente · OK confirmar · Back: fuentes", 60, getHeight() / density - 18, 14, Color.LTGRAY, false);
     }
 
@@ -407,15 +413,36 @@ public final class TvScreenView extends FrameLayout {
 
         // Dejamos una zona inferior libre para la barra de navegación del
         // teléfono, que puede ocupar espacio distinto según el fabricante.
-        float safeBottom = 56f;
+        float safeBottom = safeBottomDp();
         float bottom = heightDp() - safeBottom;
         float top = Math.max(0, bottom - 178f);
         paint.setColor(Color.argb(235, 7, 17, 31));
         c.drawRect(0, d(top), getWidth(), d(bottom), paint);
         text(c, fit(position, widthDp() - 48, 13), 24, top + 26, 13, Color.rgb(94, 234, 212), true);
         text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 58, 16, Color.WHITE, true);
-        text(c, fit(host.previewAction() == 0 ? "[Ver en pantalla completa]" : "[Agregar segundo evento en PiP]", widthDp() - 48, 17), 24, top + 98, 17, Color.rgb(94, 234, 212), true);
+        float buttonWidth = (widthDp() - 56) / 2f;
+        actionButton(c, 24, top + 78, buttonWidth, "Pantalla completa", host.previewAction() == 0);
+        actionButton(c, 32 + buttonWidth, top + 78, buttonWidth, "Segundo evento", host.previewAction() == 1);
         text(c, fit("Tap para elegir · Deslizá para cambiar fuente · Back: fuentes", widthDp() - 48, 13), 24, bottom - 14, 13, Color.LTGRAY, false);
+    }
+
+    private void actionButton(Canvas c, float x, float y, float width, String label, boolean selected) {
+        paint.setColor(selected ? Color.rgb(25, 122, 113) : Color.rgb(25, 57, 77));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 48), d(10), d(10), paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(d(selected ? 2 : 1));
+        paint.setColor(selected ? Color.rgb(94, 234, 212) : Color.rgb(71, 96, 120));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 48), d(10), d(10), paint);
+        paint.setStyle(Paint.Style.FILL);
+        text(c, fit(label, width - 24, 15), x + 12, y + 30, 15, Color.WHITE, selected);
+    }
+
+    private float safeBottomDp() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            android.view.WindowInsets insets = getRootWindowInsets();
+            if (insets != null) return Math.max(24f, insets.getSystemWindowInsetBottom() / density);
+        }
+        return 56f;
     }
 
     public void showPlaybackOverlay() {

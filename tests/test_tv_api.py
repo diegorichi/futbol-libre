@@ -41,6 +41,20 @@ class TvApiContractTest(unittest.TestCase):
         self.assertIn("Cerrar todo", response.text)
         self.assertIn("closeAllChannels", response.text)
 
+    def test_channels_page_contains_dynamic_floating_player_control(self):
+        response = self.client.get("/canales")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('class="player-button"', response.text)
+        self.assertIn('hidden title="Abrir en ventana nueva"', response.text)
+        self.assertIn("openPip", response.text)
+        javascript = self.client.get("/static/app.js")
+        self.assertEqual(javascript.status_code, 200)
+        self.assertIn("querySelector('.source-player-row')", javascript.text)
+        self.assertIn("pagehide", javascript.text)
+        self.assertIn("window.open('', '_blank')", javascript.text)
+        self.assertNotIn("popup,width=960,height=540", javascript.text)
+        self.assertIn('hls.js@latest"></script>', javascript.text)
+
     def test_upcoming_events_are_not_expandable(self):
         response = self.client.get("/canales")
         self.assertEqual(response.status_code, 200)
