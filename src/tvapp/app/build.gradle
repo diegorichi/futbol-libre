@@ -12,6 +12,7 @@ android {
         versionCode 13
         versionName "1.3"
         buildConfigField "int", "APP_VERSION_CODE", "13"
+        buildConfigField "String", "SERVER_URL", "\"http://192.168.0.149:8080\""
     }
 
     buildTypes {

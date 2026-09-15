@@ -109,6 +109,9 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         setContentView(root);
 
         String explicit = getIntent().getStringExtra("server_url");
+        if (explicit == null || explicit.trim().isEmpty()) {
+            explicit = BuildConfig.SERVER_URL;
+        }
         if (explicit != null && !explicit.trim().isEmpty()) {
             connect(explicit);
         } else {
