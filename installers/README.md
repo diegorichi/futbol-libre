@@ -3,7 +3,7 @@
 Cada instalador prepara el runtime disponible para el sistema, crea `.env` solo si no existe y ejecuta:
 
 ```text
-docker compose up --build -d
+docker compose -f docker/docker-compose.yml up --build -d
 ```
 
 - Linux Debian/Ubuntu: `install-linux.sh`
@@ -15,7 +15,7 @@ La primera instalación necesita permisos de administrador y acceso a Internet p
 La primera carga del catálogo es manual. Desde la raíz del repositorio ejecutá:
 
 ```bash
-docker compose run --rm futbol ./update-futbollibre.sh
+docker compose -f docker/docker-compose.yml run --rm futbol ./update-futbollibre.sh
 ```
 
 Repetí el mismo comando cuando quieras actualizar los eventos.

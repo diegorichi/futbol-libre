@@ -5,9 +5,14 @@ Servidor local y cliente Android TV para consultar eventos deportivos y reproduc
 ## Estructura
 
 - `src/server/`: API Flask, interfaz web y descubrimiento mDNS.
-- `src/futbol_pipeline.py`: coordinación del scraping y generación de `eventos.m3u`, `eventos.xml` y `eventos.json`.
+- `src/application/`: caso de actualización; `src/domain/`: contratos tipados; `src/publication/`: persistencia y proyecciones.
+- `data/eventos.json`: fuente de verdad; XML/M3U son proyecciones para Threadfin.
 - `src/tvapp/`: proyecto Android TV.
 - `output/`: APK listo para instalar en el TV.
+- `docker/`: Dockerfile, Compose y configuración de SearXNG.
+- `config/`: configuración operativa y URLs descubiertas.
+- `data/`: JSON canónico, XML/M3U derivados, agenda y progreso.
+- `logs/`: logs del scraper y agenda.
 
 ## Requisitos
 
@@ -34,13 +39,13 @@ En Mac, Windows o Linux:
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
+docker compose -f docker/docker-compose.yml up --build -d
 ```
 
 La primera actualización se ejecuta manualmente, una vez que los contenedores estén arriba:
 
 ```bash
-docker compose run --rm futbol ./update-futbollibre.sh
+docker compose -f docker/docker-compose.yml run --rm futbol ./update-futbollibre.sh
 ```
 
 El catálogo queda guardado en un volumen Docker. Para actualizarlo nuevamente, repetí ese comando.
@@ -51,7 +56,7 @@ En un servidor Debian/Ubuntu:
 ./install.sh
 ```
 
-El instalador crea el entorno en `/opt/futbol`, instala dependencias y registra las tareas diarias de actualización.
+El instalador crea el entorno virtual en `.venv/` dentro del repositorio, instala dependencias y ofrece registrar las tareas diarias de actualización. No inicia el servidor automáticamente; al terminar muestra cómo iniciarlo.
 
 ## Correr el servidor
 

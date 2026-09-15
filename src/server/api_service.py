@@ -10,11 +10,11 @@ from flask import Flask, jsonify, render_template, request, send_file
 
 from server.models.task_status import TaskStatus
 from server.services.agenda_service import AgendaService
-from server.services.channel_service import ChannelService
+from server.services.catalog_service import CatalogService
 from server.services.web_agenda_service import WebAgendaService
 from server.services.process_runner import ProcessRunner
 from server.discovery import MdnsAdvertiser, UdpDiscoveryResponder
-from progress import ProgressReporter
+from infrastructure.progress import ProgressReporter
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +26,7 @@ load_dotenv(ENV_PATH)
 app = Flask(__name__)
 status = TaskStatus()
 runner = ProcessRunner(str(PROJECT_ROOT), status, os.getenv("LOG_LOCATION"))
-PROGRESS_PATH = Path(os.getenv("PROGRESS_FILE", PROJECT_ROOT / ".update-futbollibre.progress.json"))
+PROGRESS_PATH = Path(os.getenv("PROGRESS_FILE", PROJECT_ROOT / "data/.update-futbollibre.progress.json"))
 if not PROGRESS_PATH.is_absolute():
     PROGRESS_PATH = PROJECT_ROOT / PROGRESS_PATH
 progress = ProgressReporter(str(PROGRESS_PATH))
@@ -46,7 +46,7 @@ def configured_path(env_name, fallback):
 
 
 def urls_env_path():
-    path = Path(os.getenv("FUTBOL_LIBRE_URL_FILE", PROJECT_ROOT / "futbol_libre_urls.env"))
+    path = Path(os.getenv("FUTBOL_LIBRE_URL_FILE", PROJECT_ROOT / "config/futbol_libre_urls.env"))
     return path if path.is_absolute() else PROJECT_ROOT / path
 
 
@@ -79,13 +79,14 @@ def executor_page():
 @app.get("/canales")
 def channels_page():
     try:
-        service = ChannelService(
-            configured_path("XML_FILE", "eventos.xml"),
-            configured_path("M3U_FILE", "eventos.m3u"),
+        service = CatalogService(
+            configured_path("XML_FILE", "data/eventos.xml"),
+            configured_path("M3U_FILE", "data/eventos.m3u"),
+            configured_path("TV_EVENTS_FILE", "data/eventos.json"),
         )
         return render_template(
             "channels.html",
-            events=service.list_event_groups(),
+            events=service.groups(),
             source_dates=service.source_update_dates(),
         )
     except FileNotFoundError:
@@ -98,7 +99,7 @@ def channels_page():
 
 @app.get("/agenda")
 def agenda_page():
-    events = WebAgendaService(configured_path("AGENDA_FILE", "agenda_web.json")).events()
+    events = WebAgendaService(configured_path("AGENDA_FILE", "data/agenda_web.json")).events()
     grouped = {}
     for event in events:
         grouped.setdefault(event["date"], []).append(event)
@@ -167,21 +168,23 @@ def stop_update():
 @app.get("/grilla")
 def grid_api():
     try:
-        channels = ChannelService(
-            configured_path("XML_FILE", "eventos.xml"),
-            configured_path("M3U_FILE", "eventos.m3u"),
-        ).list_channels()
+        channels = CatalogService(
+            configured_path("XML_FILE", "data/eventos.xml"),
+            configured_path("M3U_FILE", "data/eventos.m3u"),
+            configured_path("TV_EVENTS_FILE", "data/eventos.json"),
+        ).channels()
         return jsonify([channel.__dict__ for channel in channels])
     except FileNotFoundError:
         return jsonify([])
 
 
 def tv_channel_service():
-    # XML/M3U son la misma fuente que usa la web. eventos.json puede quedar
-    # con starts_at de fallback y desalinear la grilla de la app TV.
-    return ChannelService(
-        configured_path("XML_FILE", "eventos.xml"),
-        configured_path("M3U_FILE", "eventos.m3u"),
+    # Todas las interfaces leen el documento canónico; XML/M3U solo se
+    # mantienen como proyecciones para Threadfin y consumidores legacy.
+    return CatalogService(
+        configured_path("XML_FILE", "data/eventos.xml"),
+        configured_path("M3U_FILE", "data/eventos.m3u"),
+        configured_path("TV_EVENTS_FILE", "data/eventos.json"),
     )
 
 
@@ -193,7 +196,7 @@ def tv_health():
 @app.get("/api/v1/events")
 def tv_events():
     try:
-        events = [asdict(event) for event in tv_channel_service().list_events()]
+        events = [asdict(event) for event in tv_channel_service().events()]
         return jsonify({
             "api_version": "v1",
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -206,7 +209,7 @@ def tv_events():
 
 @app.get("/api/v1/agenda")
 def web_agenda():
-    events = WebAgendaService(configured_path("AGENDA_FILE", "agenda_web.json")).events()
+    events = WebAgendaService(configured_path("AGENDA_FILE", "data/agenda_web.json")).events()
     return jsonify({"api_version": "v1", "generated_at": datetime.now(timezone.utc).isoformat(), "events": events})
 
 

@@ -1,23 +1,6 @@
 """Detecta una estrategia y busca eventos en la página y sus iframes."""
 
-from .eventos_html_strategy import EventosHtmlStrategy
-from .agenda_php_strategy import AgendaPhpStrategy
-from .direct_channel_strategy import DirectChannelStrategy
-from .menu_strategy import MenuStrategy
-from .structured_time_strategy import StructuredTimeStrategy
-from .agenda_time_strategy import AgendaTimeStrategy
-from .event_link_time_strategy import EventLinkTimeStrategy
-
-
-STRATEGIES = (
-    EventLinkTimeStrategy(),
-    EventosHtmlStrategy(),
-    AgendaPhpStrategy(),
-    DirectChannelStrategy(),
-    StructuredTimeStrategy(),
-    AgendaTimeStrategy(),
-    MenuStrategy(),
-)
+from .strategy_registry import EVENT_STRATEGIES
 
 
 def _clave_evento(evento):
@@ -33,7 +16,7 @@ def extraer_eventos(driver):
     def recorrer_contexto():
         nonlocal estrategia_usada
 
-        for estrategia in STRATEGIES:
+        for estrategia in EVENT_STRATEGIES:
             eventos = estrategia.extraer(driver)
             if eventos:
                 if estrategia_usada:

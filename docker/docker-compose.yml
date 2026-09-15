@@ -1,9 +1,11 @@
 services:
   futbol:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: futbol-server
     env_file:
-      - .env
+      - ../.env
     environment:
       ENV_FILE: /app/.env
       SEARXNG_SEARCH_URL: http://searxng:8080/search
@@ -22,7 +24,7 @@ services:
       - "45678:45678/udp"
     volumes:
       - futbol-data:/data
-      - ./.env:/app/.env:ro
+      - ../.env:/app/.env:ro
     depends_on:
       searxng:
         condition: service_started

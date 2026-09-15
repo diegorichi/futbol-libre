@@ -82,7 +82,7 @@ class TvApiContractTest(unittest.TestCase):
 
     def test_web_agenda_deduplicates_channels_and_keeps_future_events(self):
         from datetime import datetime
-        from futbol_output import OutputPublisher
+        from publication.publisher import OutputPublisher
         from server.services.web_agenda_service import WebAgendaService
 
         with tempfile.TemporaryDirectory() as directory:
@@ -160,7 +160,7 @@ https://two.test/disney.m3u8
         )
 
     def test_agenda_hour_rolls_back_to_previous_day_after_midnight(self):
-        from futbol_events import EventCatalog
+        from domain.catalog import EventCatalog
         from datetime import datetime
 
         ahora = datetime(2026, 9, 10, 0, 38)
@@ -188,7 +188,7 @@ https://one.test/real.m3u8
             self.assertEqual([event.title for event in events], ["Partido real"])
 
     def test_extra_site_upsert_preserves_existing_grid(self):
-        from futbol_events import EventCatalog
+        from domain.catalog import EventCatalog
         from datetime import datetime
 
         with tempfile.TemporaryDirectory() as directory:

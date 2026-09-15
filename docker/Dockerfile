@@ -22,11 +22,12 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
-COPY server.sh update-futbollibre.sh update-futbol-libre-sites.sh config.sh .env.example ./
+COPY server.sh update-futbollibre.sh update-futbol-libre-sites.sh agenda.sh .env.example ./
+COPY config ./config
 COPY output ./output
 COPY installers ./installers
 
-RUN mkdir -p /data \
+RUN mkdir -p /data /app/logs \
     && chmod +x server.sh update-futbollibre.sh update-futbol-libre-sites.sh \
     && chmod +x /app/installers/*.sh /app/installers/*.command
 

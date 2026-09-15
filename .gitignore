@@ -20,5 +20,11 @@ src/tvapp/**/*.iml
 **/build/
 
 # Catálogo generado para clientes TV
-eventos.*
-agenda_*.json
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+config/futbol_libre_urls.env
+config/futbol_libre_urls.env.tmp
+
+.DS_Store

@@ -1,7 +1,7 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 
-source `pwd`/config.sh
+source "$(pwd)/config/config.sh"
 
 echo "--- Iniciando server ---"
 

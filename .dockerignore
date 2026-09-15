@@ -9,3 +9,6 @@ src/tvapp/app/build
 tests
 *.log
 *.lock
+data/
+logs/
+config/futbol_libre_urls.env

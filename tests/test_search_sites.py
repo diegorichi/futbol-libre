@@ -26,7 +26,7 @@ class Response:
 class SearchSitesTest(unittest.TestCase):
     def test_uses_browser_headers_and_configured_engine(self):
         import search_sites
-        from site_search import SiteSearchClient
+        from integrations.site_search import SiteSearchClient
 
         responses = [{"results": [{"url": "https://futbol.example/"}]}]
 
@@ -46,7 +46,7 @@ class SearchSitesTest(unittest.TestCase):
         self.assertIn("Macintosh", request.get_header("User-agent"))
 
     def test_identifies_loaded_sites_without_events(self):
-        from site_validator import SiteValidator
+        from scraping.site_validator import SiteValidator
 
         self.assertEqual(
             SiteValidator().without_events(

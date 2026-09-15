@@ -1,34 +1,35 @@
-import re
-import xml.etree.ElementTree as ET
+import json
+from pathlib import Path
 
 import requests
 
 
 class AgendaService:
     def __init__(self, env):
-        self.xml_file = env.get("XML_FILE")
+        self.events_file = env.get("TV_EVENTS_FILE") or str(Path(env.get("XML_FILE", "data/eventos.xml")).with_suffix(".json"))
         self.ntfy_url = env.get("NTFY_URL")
         self.keys = [key.strip().lower() for key in env.get("KEYS", "").split(",") if key.strip()]
 
     def events(self):
-        tree = ET.parse(self.xml_file)
         events = []
-        for programme in tree.getroot().findall("programme"):
-            title = (programme.findtext("title") or "").replace("PROXIMAMENTE: ", "")
+        try:
+            payload = json.loads(Path(self.events_file).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        for event in payload.get("events", []):
+            title = event.get("title", "")
+            hora = event.get("starts_at", "")
+            try:
+                hora = hora[11:16]
+            except TypeError:
+                continue
             if self.keys and not any(key in title.lower() for key in self.keys):
                 continue
-            match = re.search(
-                r"\[(?P<hora>\d{2}:\d{2})\]\s*(?P<torneo>.*?):\s*"
-                r"(?P<equipos>[^;]+)(?:\s*;\s*(?P<canal>[^|]*))?",
-                title,
-            )
-            if match:
-                events.append({
-                    "hora": match.group("hora"),
-                    "torneo": match.group("torneo"),
-                    "equipos": match.group("equipos").strip(),
-                    "canal": (match.group("canal") or "").strip(),
-                })
+            tournament, separator, match = title.partition(":")
+            if not separator:
+                tournament, match = "", title
+            channels = ", ".join(source.get("name", "") for source in event.get("sources", []) if source.get("name"))
+            events.append({"hora": hora, "torneo": tournament.strip(), "equipos": match.strip(), "canal": channels})
         unique = {f"{event['hora']}_{event['equipos']}": event for event in events}
         return sorted(unique.values(), key=lambda event: event["hora"])
 

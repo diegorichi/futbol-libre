@@ -6,7 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from server.models.channel import Channel, Event, EventSource
-from event_time import EventClock
+from domain.models import EventCatalogDocument
+from domain.time import EventClock
 
 
 class ChannelService:
@@ -17,10 +18,12 @@ class ChannelService:
     def __init__(self, xml_path, m3u_path, events_path=None, now=None):
         self.xml_path = xml_path
         self.m3u_path = m3u_path
-        self.events_path = events_path
+        self.events_path = events_path or str(Path(m3u_path).with_suffix(".json"))
         self.now = now or datetime.now()
 
     def list_channels(self):
+        if Path(self.events_path).exists():
+            return self._channels_from_json()
         entries = self._read_m3u_entries()
         tree = ET.parse(self.xml_path)
         root = tree.getroot()
@@ -56,6 +59,8 @@ class ChannelService:
 
     def list_event_groups(self):
         """Group the web grid by event while preserving each playable source."""
+        if Path(self.events_path).exists():
+            return self._groups_from_json()
         groups = {}
         for channel in self.list_channels():
             key = (channel.hora, channel.torneo, channel.match, channel.proximamente)
@@ -136,26 +141,55 @@ class ChannelService:
 
     def _read_events_json(self):
         with open(self.events_path, encoding="utf-8") as source:
-            payload = json.load(source)
-        events = []
-        for raw_event in payload.get("events", []):
-            sources = [EventSource(
-                id=raw_source.get("id", f"source-{index}"),
-                name=raw_source.get("name", f"Fuente {index}"),
-                url=raw_source.get("url", ""),
-                user_agent=raw_source.get("user_agent"),
-            ) for index, raw_source in enumerate(raw_event.get("sources", []), start=1) if self._is_playable_url(raw_source.get("url", ""))]
-            if not sources:
-                continue
-            events.append(Event(
-                id=raw_event.get("id", "event"),
-                title=raw_event.get("title", "Evento"),
-                starts_at=raw_event.get("starts_at", ""),
-                status=raw_event.get("status", "unavailable"),
-                sources=sources,
-                logo=raw_event.get("logo", ""),
-            ))
-        return sorted(events, key=lambda item: item.starts_at)
+            document = EventCatalogDocument.from_dict(json.load(source))
+        return [
+            Event(
+                id=event.id,
+                title=event.title,
+                starts_at=event.starts_at,
+                status=event.status,
+                sources=[
+                    EventSource(source.id, source.name, source.url, source.user_agent)
+                    for source in event.sources
+                    if self._is_playable_url(source.url)
+                ],
+                logo=event.logo,
+            )
+            for event in sorted(document.events, key=lambda item: item.starts_at)
+            if event.sources or event.status == "upcoming"
+        ]
+
+    def _groups_from_json(self):
+        groups = []
+        for event in self.list_events():
+            try:
+                starts = datetime.fromisoformat(event.starts_at)
+                hour = starts.strftime("%H:%M")
+            except (TypeError, ValueError):
+                hour = "23:59"
+            tournament, separator, match = event.title.partition(":")
+            group = {
+                "hora": hour,
+                "torneo": tournament.strip() if separator else "",
+                "match": match.strip() if separator else event.title,
+                "logo": event.logo,
+                "proximamente": event.status == "upcoming",
+                "channels": [],
+            }
+            for source in event.sources:
+                if self._is_playable_url(source.url) and event.status == "available":
+                    group["channels"].append(Channel(hour, group["torneo"], group["match"], source.name, source.url, event.logo, False))
+            if group["channels"] or group["proximamente"]:
+                groups.append(group)
+        # Mantiene el contrato visual histórico: eventos activos primero y
+        # próximos al final, independientemente del orden del JSON.
+        return sorted(groups, key=lambda item: (item["proximamente"], self._nearest_time(item["hora"])))
+
+    def _channels_from_json(self):
+        channels = []
+        for group in self._groups_from_json():
+            channels.extend(group["channels"])
+        return channels
 
     def source_update_dates(self):
         return {

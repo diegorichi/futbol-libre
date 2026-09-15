@@ -22,5 +22,5 @@ docker info *> $null
 if ($LASTEXITCODE -ne 0) { throw "Docker Desktop no inició." }
 
 if (-not (Test-Path ".env")) { Copy-Item ".env.example" ".env" }
-docker compose up --build -d
+docker compose -f docker/docker-compose.yml up --build -d
 Start-Process "http://localhost:8080"

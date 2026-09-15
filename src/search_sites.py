@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 from urllib.request import build_opener
 from dotenv import dotenv_values
-from site_search import SiteSearchClient
-from site_url_store import SiteUrlStore
+from integrations.site_search import SiteSearchClient
+from integrations.site_url_store import SiteUrlStore
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +19,7 @@ ENV = {**dotenv_values(ENV_FILE), **os.environ}
 SEARCH_URL = ENV.get("SEARXNG_SEARCH_URL", "http://192.168.0.168/search")
 ENGINE = ENV.get("SEARXNG_ENGINE", "duckduckgo")
 QUERY = ENV.get("SEARXNG_QUERY", "futbol libre")
-URLS_FILE = Path(ENV.get("FUTBOL_LIBRE_URL_FILE", PROJECT_ROOT / "futbol_libre_urls.env"))
+URLS_FILE = Path(ENV.get("FUTBOL_LIBRE_URL_FILE", PROJECT_ROOT / "config/futbol_libre_urls.env"))
 if not URLS_FILE.is_absolute():
     URLS_FILE = PROJECT_ROOT / URLS_FILE
 

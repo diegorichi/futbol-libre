@@ -5,7 +5,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
-from event_time import EventClock
+from domain.time import EventClock
 from server.services.channel_service import ChannelService
 
 

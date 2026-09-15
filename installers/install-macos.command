@@ -22,6 +22,6 @@ done
 docker info >/dev/null 2>&1 || { echo "Docker Desktop no inició." >&2; exit 1; }
 
 if [[ ! -f .env ]]; then cp .env.example .env; fi
-docker compose up --build -d
+docker compose -f docker/docker-compose.yml up --build -d
 echo "Fútbol Libre disponible en http://localhost:8080"
 open http://localhost:8080

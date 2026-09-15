@@ -8,13 +8,13 @@ Este documento describe lo que está implementado en este checkout. No es una es
 cron / Flask / ejecución manual
           |
           v
-update-futbollibre.sh -> python -m futbol_pipeline
+update-futbollibre.sh -> python -m application.update_catalog
           |
           +-> Selenium: valida dominios
           +-> src/scraping: eventos por estrategias + iframes
           +-> agrupa eventos entre sitios
           +-> extrae playbackURL/.m3u8 por fuente
-          +-> publica eventos.xml, eventos.m3u y eventos.json
+          +-> publica data/eventos.json y deriva data/eventos.xml + data/eventos.m3u
                                       |
                                       v
                          Flask: web + /api/v1/events
@@ -26,7 +26,7 @@ update-futbollibre.sh -> python -m futbol_pipeline
        mDNS _futbol._tcp o UDP 45678
 
 agenda.sh / API / agenda.py -> AgendaService -> NTFY opcional
-update-futbol-libre-sites.sh -> SearXNG -> futbol_libre_urls.env
+update-futbol-libre-sites.sh -> SearXNG -> config/futbol_libre_urls.env
 ```
 
 ## Componentes y contratos
@@ -44,16 +44,16 @@ update-futbol-libre-sites.sh -> SearXNG -> futbol_libre_urls.env
 
 Salidas actuales:
 
-- `eventos.xml`: XMLTV usado por web y servicios de agenda.
-- `eventos.m3u`: lista legacy de slots, hasta 100 canales `E01`–`E100`.
-- `eventos.json`: salida auxiliar; la API de TV lee XML/M3U mediante `ChannelService` para evitar desalineación.
-- `.update-futbollibre.progress.json`: progreso atómico de sitios y streams.
+- `eventos.json`: fuente de verdad canónica para eventos y fuentes reproducibles.
+- `eventos.xml`: proyección XMLTV de `eventos.json` para Threadfin y consumidores legacy.
+- `eventos.m3u`: proyección de slots de `eventos.json` para Threadfin y consumidores legacy.
+- `data/.update-futbollibre.progress.json`: progreso atómico de sitios y streams.
 
 ### 2. SearXNG y URLs de sitios
 
-`update-futbol-libre-sites.sh` ejecuta `src/search_sites.py`. El entrypoint delega la consulta a SearXNG en `src/site_search.py` y la persistencia atómica en `src/site_url_store.py`. El resultado se escribe en `futbol_libre_urls.env` mediante archivo temporal y replace. Si la búsqueda queda vacía o bloqueada, se conserva la lista anterior.
+`update-futbol-libre-sites.sh` ejecuta `src/search_sites.py`. El entrypoint delega la consulta a SearXNG en `src/integrations/site_search.py` y la persistencia atómica en `src/integrations/site_url_store.py`. El resultado se escribe en `config/futbol_libre_urls.env` mediante archivo temporal y replace. Si la búsqueda queda vacía o bloqueada, se conserva la lista anterior.
 
-La validación y el pipeline operativo están en `src/futbol_pipeline.py`; no existe un módulo monolítico `futbol.py`. Los dominios inválidos se eliminan solo si queda al menos uno válido. NTFY se envía únicamente cuando hubo cambios efectivos; no se envía por una ejecución sin cambios.
+La validación y el caso de uso operativo están en `src/application/update_catalog.py`. Los dominios inválidos se eliminan solo si queda al menos uno válido. NTFY se envía únicamente cuando hubo cambios efectivos; no se envía por una ejecución sin cambios.
 
 El scraper usa `BrowserDriverFactory` y `SiteScraper`. El logging se configura con `LOG_LEVEL=INFO|DEBUG|TRACE`: `TRACE` registra opciones individuales detectadas, `DEBUG` decisiones internas y `INFO` etapas y resultados.
 
@@ -62,7 +62,7 @@ Esto es mantenimiento de fuentes, no extracción de eventos. La agenda principal
 ### 3. Servidor Flask y ejecución
 
 - Inicio: `server.sh` ejecuta `PYTHONPATH=src python -m server.api_service` en el puerto `8080`.
-- `ProcessRunner` persiste PID y log, recupera estado tras reinicio y detiene el grupo o árbol del proceso para no dejar Chrome/ChromeDriver vivos.
+- `ProcessRunner` persiste PID en `data/` y log en `logs/`, recupera estado tras reinicio y detiene el grupo o árbol del proceso para no dejar Chrome/ChromeDriver vivos.
 - `update-futbollibre.sh` usa `flock` para impedir ejecuciones concurrentes.
 - `/update-url`, `/status` y `/stop-update` controlan la ejecución y el progreso.
 - `/api/v1/health` comprueba el servicio.
@@ -110,16 +110,16 @@ adb install -r output/futbol-tv-debug.apk
 
 Son integraciones separadas:
 
-- `AgendaService.events()` lee `eventos.xml`, filtra por `KEYS`, parsea títulos y deduplica por hora/equipos.
+- `AgendaService.events()` lee `data/eventos.json`, filtra por `KEYS`, parsea títulos y deduplica por hora/equipos.
 - `update_ntfy()` publica la agenda en `NTFY_URL` con título `Grilla Deportiva`.
 - `update_ntfy()` publica la agenda en `NTFY_URL` si está configurada; sin esa variable, la operación se omite explícitamente.
 - Flask expone `/system-update/ntfy` y `/system-update/sites` para dispararlas manualmente.
 
 ## Reglas para cambios
 
-- Cambiar primero el contrato en un único punto y luego sus consumidores; barrer referencias residuales con `rg`.
+- Cambiar primero el contrato JSON en un único punto y luego sus consumidores; barrer referencias residuales con `rg`.
 - No eliminar `eventos.xml`, `eventos.m3u`, `eventos.json`, endpoints o nombres de entorno sin identificar consumidores directos e indirectos.
-- Mantener la escritura de archivos generados atómica cuando el proceso pueda ser leído por Flask o por otro job.
+- Mantener la escritura de JSON, XML y M3U atómica cuando el proceso pueda ser leído por Flask o por otro job.
 - Probar, como mínimo, importación/sintaxis, tests focalizados y el endpoint o build afectado. Separar validación local de validación en un TV, host Linux o sitio real.
 - Tratar CAPTCHA, dominios caídos y streams detectados sin HLS como estados explícitos, no como éxitos parciales.
 
