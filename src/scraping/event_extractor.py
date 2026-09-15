@@ -1,6 +1,12 @@
 """Detecta una estrategia y busca eventos en la página y sus iframes."""
 
+import logging
+
 from .strategy_registry import EVENT_STRATEGIES
+from .iframe_wait import wait_for_iframes
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _clave_evento(evento):
@@ -8,13 +14,27 @@ def _clave_evento(evento):
     return evento.get("nombre", ""), evento.get("hora", ""), opciones
 
 
-def extraer_eventos(driver):
+def extraer_eventos(driver, iframe_timeout=10):
     """Busca eventos en todos los contextos y combina las estrategias válidas."""
+    wait_for_iframes(driver, timeout=iframe_timeout)
     encontrados = []
     estrategia_usada = None
 
     def recorrer_contexto():
         nonlocal estrategia_usada
+
+        diagnostico = driver.execute_script(
+            """
+            return {
+                frames: document.querySelectorAll('iframe').length,
+                menus: document.querySelectorAll('#menu').length,
+                eventosMenu: document.querySelectorAll('#menu > li.toggle-submenu').length,
+                opcionesMenu: document.querySelectorAll('#menu a.submenu-item[href]').length,
+                url: location.href
+            };
+            """
+        )
+        LOGGER.debug("Contexto de eventos: %s", diagnostico)
 
         for estrategia in EVENT_STRATEGIES:
             eventos = estrategia.extraer(driver)

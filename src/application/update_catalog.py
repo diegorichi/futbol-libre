@@ -53,7 +53,7 @@ class FootballUpdater:
             self.notifier.notify([url for url in valid if url not in empty], invalid + empty)
             pool, results = self._extract_streams(driver, active, progress)
             events = self.projector.tv_events(raw, results)
-            self._publish(events, extra_only)
+            self._publish(events, raw, extra_only)
             progress.complete("Actualización completa.")
         except Exception as error:
             progress.fail(str(error))
@@ -119,14 +119,18 @@ class FootballUpdater:
                 results[url] = (None, None)
         return pool, results
 
-    def _publish(self, events, extra_only):
+    def _publish(self, events, raw_events, extra_only):
         m3u = self.config["m3u"]
         xml = self.config["xml"] or m3u.replace(".m3u", ".xml")
         tv = self.config["events"] or m3u.replace(".m3u", ".json")
         if extra_only:
             events = self.catalog.merge_tv_events(events, tv)
         self.publisher.publish_catalog(events, tv, xml, m3u, USER_AGENT, SINTEL_URL)
-        self.publisher.publish_agenda_from_catalog(tv, self.config["agenda"], preserve_path=self.config["agenda"] if extra_only else None)
+        self.publisher.publish_agenda_from_events(
+            raw_events,
+            self.config["agenda"],
+            preserve_path=self.config["agenda"] if extra_only else None,
+        )
         self.threadfin.refresh()
 
 

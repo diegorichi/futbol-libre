@@ -80,7 +80,7 @@ class TvApiContractTest(unittest.TestCase):
         self.assertIn('target="_blank"', response.text)
         self.assertIn('rel="noopener noreferrer"', response.text)
 
-    def test_web_agenda_deduplicates_channels_and_keeps_future_events(self):
+    def test_web_agenda_deduplicates_channels_and_keeps_remaining_today(self):
         from datetime import datetime
         from publication.publisher import OutputPublisher
         from server.services.web_agenda_service import WebAgendaService
@@ -92,12 +92,13 @@ class TvApiContractTest(unittest.TestCase):
                 {"hora": "19:59", "nombre": "Liga: Partido vencido", "opciones": [{"canal": "ESPN"}]},
                 {"hora": "20:01", "nombre": "Liga: Partido futuro", "opciones": [{"canal": "ESPN"}, {"canal": "Disney+"}]},
                 {"hora": "02:00", "nombre": "Copa: Partido mañana", "opciones": [{"canal": "TNT"}]},
+                {"hora": "23:00", "nombre": "Copa: Partido tarde", "opciones": [{"canal": "TNT"}]},
             ], path, ahora)
             events = WebAgendaService(path, ahora).events()
 
-            self.assertEqual([event["match"] for event in events], ["Partido futuro", "Partido mañana"])
+            self.assertEqual([event["match"] for event in events], ["Partido futuro", "Partido tarde"])
             self.assertEqual(events[0]["channel"], "ESPN, ...")
-            self.assertEqual(events[1]["date"], "2026-09-13")
+            self.assertEqual(events[1]["date"], "2026-09-12")
 
     def test_events_contract(self):
         response = self.client.get("/api/v1/events")

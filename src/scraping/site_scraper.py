@@ -1,10 +1,17 @@
 """Recorrido aislado de sitios y agrupación de eventos."""
 import logging
+from urllib.parse import urlparse
 from selenium.common.exceptions import WebDriverException
 from .event_extractor import extraer_eventos
 from .event_matching import agrupar_eventos
+from .http_fallback import fetch_html, iframe_urls, load_html
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _same_host(requested_url, current_url):
+    return urlparse(requested_url).netloc.lower().removeprefix("www.") == \
+        urlparse(current_url).netloc.lower().removeprefix("www.")
 
 
 class SiteScraper:
@@ -20,10 +27,18 @@ class SiteScraper:
             try:
                 LOGGER.debug("Abriendo sitio %s", url)
                 driver.switch_to.default_content(); driver.get(url)
-                if validation_callback is not None and validation_callback(driver):
-                    raise WebDriverException("Dominio activo pero sin contenido válido")
+                if not _same_host(url, driver.current_url):
+                    LOGGER.warning("Selenium redirigió %s -> %s; usando fallback HTTP", url, driver.current_url)
+                    found, strategy = self._scrape_http_fallback(driver, url)
+                else:
+                    if validation_callback is not None and validation_callback(driver):
+                        raise WebDriverException("Dominio activo pero sin contenido válido")
+                    phase = "scraping"
+                    found, strategy = self.extractor(driver)
+                    if not found:
+                        LOGGER.info("Sin eventos vía Selenium en %s; probando fallback HTTP", url)
+                        found, strategy = self._scrape_http_fallback(driver, url)
                 phase = "scraping"
-                found, strategy = self.extractor(driver)
                 for event in found:
                     event["fuentes"] = [url]
                     for option in event.get("opciones", []):
@@ -42,3 +57,24 @@ class SiteScraper:
         grouped = self.matcher(events)
         LOGGER.info("Scraping terminado: %d eventos crudos, %d agrupados", len(events), len(grouped))
         return grouped, sites, errors
+
+    def _scrape_http_fallback(self, driver, url):
+        html, error = fetch_html(url)
+        if error:
+            raise WebDriverException(f"Fallback HTTP falló para {url}: {error}")
+        load_html(driver, html, url)
+        found, strategy = self.extractor(driver)
+        if found:
+            LOGGER.info("Fallback HTTP en %s: %d eventos vía %s", url, len(found), strategy)
+            return found, strategy
+
+        for frame_url in iframe_urls(html, url):
+            LOGGER.info("Probando iframe nivel 1: %s", frame_url)
+            driver.switch_to.default_content()
+            driver.get(frame_url)
+            found, strategy = self.extractor(driver)
+            if found:
+                LOGGER.info("Iframe nivel 1 en %s: %d eventos vía %s", frame_url, len(found), strategy)
+                return found, strategy
+        LOGGER.info("Fallback HTTP en %s: %d eventos vía %s", url, len(found), strategy)
+        return found, strategy

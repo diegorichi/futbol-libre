@@ -50,6 +50,22 @@ class OutputPublisher:
         ]
         self.publish_agenda(events, path, now=now, preserve_path=preserve_path)
 
+    def publish_agenda_from_events(self, events, path, now=None, preserve_path=None):
+        """Publica la agenda desde todos los eventos detectados del día.
+
+        No usa el catálogo de TV porque ese catálogo está limitado a la
+        ventana de reproducción de la grilla.
+        """
+        agenda_events = [
+            {
+                "hora": event.get("hora"),
+                "nombre": event.get("nombre"),
+                "opciones": event.get("opciones", []),
+            }
+            for event in events
+        ]
+        self.publish_agenda(agenda_events, path, now=now, preserve_path=preserve_path)
+
     def _legacy_projections(self, document, user_agent, placeholder_url):
         playlist, guide = "#EXTM3U\n", []
         slot = 0
@@ -125,7 +141,7 @@ class OutputPublisher:
         for event in events:
             try: start = self.clock.nearest(event["hora"], now)
             except (KeyError, TypeError, ValueError): continue
-            if start <= now: continue
+            if start <= now or start.date() != now.date(): continue
             name = (event.get("nombre") or "Evento").strip(); tournament, separator, match = name.partition(":")
             if not separator: tournament, match = "", name
             channels = []
@@ -136,6 +152,8 @@ class OutputPublisher:
         if preserve_path and Path(preserve_path).exists():
             try:
                 for event in json.loads(Path(preserve_path).read_text(encoding="utf-8")).get("events", []):
-                    if event.get("starts_at", "") > now.isoformat(): grouped.setdefault((event.get("starts_at"), normalizar_nombre(event.get("match", ""))), event)
+                    starts_at = event.get("starts_at", "")
+                    if starts_at > now.isoformat() and starts_at[:10] == now.date().isoformat():
+                        grouped.setdefault((starts_at, normalizar_nombre(event.get("match", ""))), event)
             except (OSError, json.JSONDecodeError): pass
         self._atomic_write(path, json.dumps({"api_version": "v1", "events": sorted(grouped.values(), key=lambda item: item["starts_at"])}, ensure_ascii=False, indent=2) + "\n")
