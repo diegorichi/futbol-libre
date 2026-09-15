@@ -169,6 +169,18 @@ https://two.test/disney.m3u8
             datetime(2026, 9, 9, 21, 30),
         )
 
+    def test_upcoming_is_limited_to_the_next_two_hours(self):
+        from datetime import datetime
+        from domain.catalog import EventCatalog
+
+        ahora = datetime(2026, 9, 15, 20, 0)
+        catalog = EventCatalog()
+
+        self.assertFalse(catalog.is_upcoming("20:29", ahora))
+        self.assertTrue(catalog.is_upcoming("20:30", ahora))
+        self.assertTrue(catalog.is_upcoming("22:00", ahora))
+        self.assertFalse(catalog.is_upcoming("22:01", ahora))
+
     def test_unavailable_placeholder_is_not_an_event_source(self):
         from server.services.channel_service import ChannelService
         with tempfile.TemporaryDirectory() as directory:

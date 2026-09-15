@@ -33,7 +33,7 @@ class EventCatalog:
         try:
             ahora = ahora or datetime.now()
             hora_obj = self.clock.nearest(hora_str, ahora)
-            return (ahora + timedelta(minutes=30)) <= hora_obj or hora_str == "23:59"
+            return ahora + timedelta(minutes=30) <= hora_obj <= ahora + timedelta(hours=2)
         except (TypeError, ValueError):
             return False
 

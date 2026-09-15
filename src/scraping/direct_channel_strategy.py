@@ -7,6 +7,7 @@ class DirectChannelStrategy:
     def extraer(self, driver):
         return driver.execute_script(
             """
+            const esPaginaEventos = new RegExp("(?:^|/)eventos?\\d*\\.(?:html?|php)(?:[?#]|$)", "i");
             const resultado = [];
             for (const li of document.querySelectorAll('li')) {
                 const eventoAnchor = Array.from(li.children).find(anchor =>
@@ -16,9 +17,7 @@ class DirectChannelStrategy:
                 const anchors = Array.from(li.querySelectorAll('a[href]')).filter(anchor => {
                     const href = anchor.getAttribute('href') || '';
                     return href && href !== '#' &&
-                        !href.includes('eventos.html') &&
-                        !href.includes('eventos12.html') &&
-                        !href.includes('eventos.php');
+                        !esPaginaEventos.test(href);
                 });
                 if (!eventoAnchor || !anchors.length) continue;
 

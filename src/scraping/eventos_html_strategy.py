@@ -7,6 +7,7 @@ class EventosHtmlStrategy:
     def extraer(self, driver):
         return driver.execute_script(
             """
+            const esPaginaEventos = new RegExp("(?:^|/)eventos?\\d*\\.(?:html?|php)(?:[?#]|$)", "i");
             const resultado = [];
             const vistos = new Set();
 
@@ -14,13 +15,10 @@ class EventosHtmlStrategy:
                 const eventoAnchor = Array.from(li.children).find(anchor =>
                     anchor.matches('a[href$="#"], a.active') &&
                     anchor.querySelector('span.t, span') &&
-                    !anchor.matches('a[href*="eventos.html"], a[href*="eventos12.html"]')
+                    !esPaginaEventos.test(anchor.getAttribute('href') || '')
                 );
-                const anchors = Array.from(
-                    li.querySelectorAll(
-                        'a[href*="eventos.html"], a[href*="eventos12.html"]'
-                    )
-                );
+                const anchors = Array.from(li.querySelectorAll('a[href]'))
+                    .filter(anchor => esPaginaEventos.test(anchor.getAttribute('href') || ''));
 
                 if (!eventoAnchor || !anchors.length) continue;
 

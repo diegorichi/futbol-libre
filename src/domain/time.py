@@ -14,7 +14,7 @@ class EventClock:
     def is_upcoming(self, value, now=None):
         try:
             now = now or datetime.now(); event = self.nearest(value, now)
-            return now + timedelta(minutes=30) <= event or value == "23:59"
+            return now + timedelta(minutes=30) <= event <= now + timedelta(hours=2)
         except (TypeError, ValueError): return False
 
     def is_active(self, value, now=None):
