@@ -14,8 +14,8 @@ services:
       FUTBOL_LIBRE_URL_FILE: /data/futbol_libre_urls.env
       PROGRESS_FILE: /data/.update-futbollibre.progress.json
       LOG_LOCATION: /data
-      TV_APP_VERSION_CODE: "12"
-      TV_APP_VERSION_NAME: "1.2"
+      TV_APP_VERSION_CODE: "13"
+      TV_APP_VERSION_NAME: "1.3"
       TV_APP_APK_PATH: /app/output/futbol-tv-release.apk
     ports:
       - "8080:8080"

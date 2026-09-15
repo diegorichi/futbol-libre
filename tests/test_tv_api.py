@@ -73,6 +73,13 @@ class TvApiContractTest(unittest.TestCase):
         self.assertIn('href="/tvapp"', response.text)
         self.assertIn('href="/agenda"', response.text)
 
+    def test_executor_contains_search_link_in_new_tab(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('href="https://duckduckgo.com/?q=futbol+libre"', response.text)
+        self.assertIn('target="_blank"', response.text)
+        self.assertIn('rel="noopener noreferrer"', response.text)
+
     def test_web_agenda_deduplicates_channels_and_keeps_future_events(self):
         from datetime import datetime
         from futbol_output import OutputPublisher

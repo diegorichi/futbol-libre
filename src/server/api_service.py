@@ -3,6 +3,7 @@ import subprocess
 from datetime import datetime, timezone
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import urlencode
 
 from dotenv import dotenv_values, load_dotenv, set_key
 from flask import Flask, jsonify, render_template, request, send_file
@@ -32,8 +33,8 @@ progress = ProgressReporter(str(PROGRESS_PATH))
 runner.recover()
 mdns = MdnsAdvertiser(port=8080)
 udp_discovery = UdpDiscoveryResponder(http_port=8080)
-TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "12"))
-TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.2")
+TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "13"))
+TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.3")
 TV_APP_APK_PATH = Path(os.getenv("TV_APP_APK_PATH", PROJECT_ROOT / "output/futbol-tv-release.apk"))
 if not TV_APP_APK_PATH.is_absolute():
     TV_APP_APK_PATH = PROJECT_ROOT / TV_APP_APK_PATH
@@ -66,10 +67,12 @@ def agenda_service():
 @app.get("/")
 @app.get("/ejecutar")
 def executor_page():
+    search_query = os.getenv("SEARXNG_QUERY", "futbol libre")
     return render_template(
         "executor.html",
         current_url=current_futbol_urls(),
         current_extra_url=current_extra_futbol_url(),
+        search_url=f"https://duckduckgo.com/?{urlencode({'q': search_query})}",
     )
 
 
