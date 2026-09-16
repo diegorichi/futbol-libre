@@ -9,9 +9,9 @@ android {
         applicationId "com.futbol.tv"
         minSdk 23
         targetSdk 35
-        versionCode 18
-        versionName "1.8"
-        buildConfigField "int", "APP_VERSION_CODE", "18"
+        versionCode 19
+        versionName "1.9"
+        buildConfigField "int", "APP_VERSION_CODE", "19"
         buildConfigField "String", "SERVER_URL", "\"http://192.168.0.149:8080\""
     }
 

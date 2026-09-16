@@ -438,6 +438,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             } else {
                 state = TvScreenView.PLAYER;
                 playback.enterFullscreen();
+                screen.showPlaybackOverlay();
             }
             screen.invalidate();
         }
@@ -639,7 +640,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         else if (state == TvScreenView.PREVIEW) {
             if (previewAction == 1) openPipEventPicker();
             else if (previewAction == 2) toggleVpnPreview();
-            else { state = TvScreenView.PLAYER; playback.enterFullscreen(); }
+            else { state = TvScreenView.PLAYER; playback.enterFullscreen(); screen.showPlaybackOverlay(); }
         } else if (state == TvScreenView.PIP_EVENTS) showPipSources();
         else if (state == TvScreenView.PIP_SOURCES && !events.get(pipEvent).sources.isEmpty()) startPip(events.get(pipEvent).sources.get(pipSource));
         screen.invalidate();
