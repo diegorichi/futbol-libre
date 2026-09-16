@@ -470,8 +470,8 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     @Override public String playbackLabel() {
         if (events.isEmpty() || selectedEvent >= events.size()) return "";
         Event event = events.get(selectedEvent);
-        if (selectedSource >= event.sources.size()) return event.title;
-        return event.title + " · " + event.sources.get(selectedSource).name;
+        if (selectedSource >= event.sources.size()) return "";
+        return event.sources.get(selectedSource).name;
     }
     @Override public String updateVersion() { return pendingUpdate == null ? "" : pendingUpdate.versionName; }
     @Override public String updateStatus() { return updateStatus; }
@@ -510,7 +510,47 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             state = TvScreenView.PLAYER;
             playback.enterFullscreen();
             screen.invalidate();
+        } else if (control == 3) {
+            toggleVpnPlayback();
+        } else if (control == 4) {
+            openPipEventPicker();
         }
+    }
+
+    private void toggleVpnPlayback() {
+        if (!vpnAvailable() || events.isEmpty()) return;
+        Event event = events.get(selectedEvent);
+        Source source = event.sources.get(selectedSource);
+        if (vpnPlayback || vpnConnecting) {
+            vpnPlayback = false;
+            vpnConnecting = false;
+            vpnProxyUrl = null;
+            playback.switchPrimary(source);
+            screen.showPlaybackOverlay();
+            return;
+        }
+        vpnConnecting = true;
+        screen.showPlaybackOverlay();
+        serverClient.requestVpnStreamUrl(serverBase, event.id, source.id, new ServerClient.StreamUrlCallback() {
+            @Override public void onSuccess(String url, String proxyUrl) {
+                main.post(() -> {
+                    Source vpnSource = new Source(source.id, source.name, url, source.userAgent, source.pageUrl);
+                    vpnPlayback = true;
+                    vpnConnecting = false;
+                    vpnProxyUrl = proxyUrl;
+                    playback.switchPrimary(vpnSource, true, proxyUrl);
+                    screen.showPlaybackOverlay();
+                });
+            }
+            @Override public void onError(Exception error) {
+                main.post(() -> {
+                    vpnPlayback = false;
+                    vpnConnecting = false;
+                    vpnProxyUrl = null;
+                    screen.showPlaybackOverlay();
+                });
+            }
+        });
     }
 
     @Override public int onScroll(float deltaY) {
