@@ -213,11 +213,10 @@ public final class PlaybackController {
         result.setVolume(muted ? 0f : 1f);
         result.addListener(new Player.Listener() {
             @Override public void onPlaybackStateChanged(int playbackState) {
-                if (playbackState == Player.STATE_READY) listener.onMessage("OK para pantalla completa");
                 if (playbackState == Player.STATE_ENDED) listener.onMessage("El stream terminó");
             }
             @Override public void onPlayerError(PlaybackException error) {
-                listener.onMessage("No carga. Flechas para probar otra fuente");
+                listener.onMessage("");
             }
         });
         return result;

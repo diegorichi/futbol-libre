@@ -30,10 +30,10 @@ public final class TvScreenView extends FrameLayout {
         List<Event> events();
         int selectedEvent(); int eventOffset(); int selectedSource(); int sourceOffset();
         int pipEvent(); int pipEventOffset(); int pipSource(); int pipSourceOffset();
-        int previewAction(); boolean vpnAvailable(); boolean vpnActive(); String playbackRoute(); String playerMessage(); Bitmap logo(String url); String playbackLabel();
+        int previewAction(); boolean vpnAvailable(); boolean vpnActive(); String playerMessage(); Bitmap logo(String url); String playbackLabel();
         String updateVersion(); String updateStatus();
         void onBack(); void onDpad(int keyCode); void onConfirm(); void onTouch(float x, float y); void onSwipe(boolean down); int onScroll(float deltaY);
-        void onEventTap(int index, boolean forPip); void onSourceTap(int index, boolean forPip);
+        void onEventTap(int index, boolean forPip); void onSourceTap(int index, boolean forPip); void onPlaybackControl(int control);
     }
 
     private final Host host;
@@ -393,14 +393,12 @@ public final class TvScreenView extends FrameLayout {
             if (host.selectedSource() < event.sources.size()) position = event.title + " · " + (host.selectedSource() + 1) + "/" + event.sources.size() + " · " + event.sources.get(host.selectedSource()).name;
         }
         text(c, position, 60, getHeight() / density - 136, 15, Color.rgb(94,234,212), true);
-        text(c, host.playbackRoute(), 60, getHeight() / density - 112, 15, Color.rgb(94,234,212), true);
         text(c, host.playerMessage(), 60, getHeight() / density - 88, 18, Color.WHITE, true);
         float buttonY = getHeight() / density - 94;
         float buttonWidth = host.vpnAvailable() ? 210 : 260;
         actionButton(c, 60, buttonY, buttonWidth, "Pantalla completa", host.previewAction() == 0);
         actionButton(c, 68 + buttonWidth, buttonY, buttonWidth, "Agregar segundo evento", host.previewAction() == 1);
-        if (host.vpnAvailable()) actionButton(c, 76 + buttonWidth * 2, buttonY, buttonWidth, host.vpnActive() ? "VPN activa" : "Usar VPN", host.previewAction() == 2);
-        text(c, "◀ ▶ elegir acción · ▲ ▼ cambiar fuente · OK confirmar · Back: fuentes", 60, getHeight() / density - 18, 14, Color.LTGRAY, false);
+        if (host.vpnAvailable()) vpnActionButton(c, 76 + buttonWidth * 2, buttonY, buttonWidth, host.vpnActive(), host.previewAction() == 2);
     }
 
     private void drawCompactPreview(Canvas c) {
@@ -422,14 +420,12 @@ public final class TvScreenView extends FrameLayout {
         paint.setColor(Color.argb(235, 7, 17, 31));
         c.drawRect(0, d(top), getWidth(), d(bottom), paint);
         text(c, fit(position, widthDp() - 48, 13), 24, top + 26, 13, Color.rgb(94, 234, 212), true);
-        text(c, fit(host.playbackRoute(), widthDp() - 48, 13), 24, top + 50, 13, Color.rgb(94, 234, 212), true);
         text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 76, 16, Color.WHITE, true);
         int buttonCount = host.vpnAvailable() ? 3 : 2;
         float buttonWidth = (widthDp() - 32f - 8f * (buttonCount - 1)) / buttonCount;
         actionButton(c, 24, top + 78, buttonWidth, "Pantalla completa", host.previewAction() == 0);
         actionButton(c, 32 + buttonWidth, top + 78, buttonWidth, "Segundo evento", host.previewAction() == 1);
-        if (host.vpnAvailable()) actionButton(c, 40 + buttonWidth * 2, top + 78, buttonWidth, host.vpnActive() ? "VPN activa" : "Usar VPN", host.previewAction() == 2);
-        text(c, fit("Tap para elegir · Deslizá para cambiar fuente · Back: fuentes", widthDp() - 48, 13), 24, bottom - 14, 13, Color.LTGRAY, false);
+        if (host.vpnAvailable()) vpnActionButton(c, 40 + buttonWidth * 2, top + 78, buttonWidth, host.vpnActive(), host.previewAction() == 2);
     }
 
     private void actionButton(Canvas c, float x, float y, float width, String label, boolean selected) {
@@ -441,6 +437,17 @@ public final class TvScreenView extends FrameLayout {
         c.drawRoundRect(d(x), d(y), d(x + width), d(y + 48), d(10), d(10), paint);
         paint.setStyle(Paint.Style.FILL);
         text(c, fit(label, width - 24, 15), x + 12, y + 30, 15, Color.WHITE, selected);
+    }
+
+    private void vpnActionButton(Canvas c, float x, float y, float width, boolean active, boolean focused) {
+        paint.setColor(active ? Color.rgb(127, 29, 29) : Color.rgb(25, 57, 77));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 48), d(10), d(10), paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(d(active || focused ? 2 : 1));
+        paint.setColor(active ? Color.rgb(254, 202, 202) : focused ? Color.rgb(94, 234, 212) : Color.rgb(71, 96, 120));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 48), d(10), d(10), paint);
+        paint.setStyle(Paint.Style.FILL);
+        text(c, "VPN", x + 12, y + 30, 15, Color.WHITE, active || focused);
     }
 
     private float safeBottomDp() {
@@ -461,17 +468,27 @@ public final class TvScreenView extends FrameLayout {
     private void drawPlaybackOverlay(Canvas c) {
         if (!playbackOverlayVisible) return;
         float bottom = getHeight() / density - 22;
-        String help = host.state() == DUAL
-                ? "▲ ▼ cambiar fuente principal · ◀ ▶ intercambiar · Back: cerrar PiP"
-                : "▲ ▼ cambiar fuente · Back: volver";
         paint.setColor(Color.argb(205, 7, 17, 31));
         c.drawRect(0, getHeight() - d(58), getWidth(), getHeight(), paint);
-        text(c, help, 35, bottom, 14, Color.LTGRAY, false);
+        float buttonY = bottom - 42;
+        playbackControlButton(c, 24, buttonY, 58, "CH ▲");
+        playbackControlButton(c, 90, buttonY, 58, "CH ▼");
+        playbackControlButton(c, 156, buttonY, 58, "[ ]");
         String label = host.playbackLabel();
         paint.setTextSize(d(15)); paint.setTypeface(Typeface.DEFAULT_BOLD);
         float labelWidth = paint.measureText(label);
-        text(c, label, getWidth() / density - labelWidth / density - 35, bottom, 15, Color.rgb(94,234,212), true);
-        text(c, host.playbackRoute(), 35, 28, 15, Color.rgb(94,234,212), true);
+        text(c, label, getWidth() / density - labelWidth / density - 35, 28, 15, Color.rgb(94,234,212), true);
+    }
+
+    private void playbackControlButton(Canvas c, float x, float y, float width, String label) {
+        paint.setColor(Color.argb(235, 25, 57, 77));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 34), d(7), d(7), paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(d(1));
+        paint.setColor(Color.rgb(94, 234, 212));
+        c.drawRoundRect(d(x), d(y), d(x + width), d(y + 34), d(7), d(7), paint);
+        paint.setStyle(Paint.Style.FILL);
+        text(c, label, x + 9, y + 22, 13, Color.WHITE, true);
     }
 
     private void drawPipSources(Canvas c) {
@@ -498,7 +515,19 @@ public final class TvScreenView extends FrameLayout {
         // Durante reproducción esta vista es transparente y no debe tapar los
         // gestos/controles táctiles del PlayerView que está debajo.
         int state = host.state();
-        if (state == PLAYER || state == DUAL) return false;
+        if (state == PLAYER || state == DUAL) {
+            if (compactLayout()) {
+                float x = event.getX() / density;
+                float y = event.getY() / density;
+                float buttonY = getHeight() / density - 64;
+                int control = x >= 24 && x < 82 ? 0 : x >= 90 && x < 148 ? 1 : x >= 156 && x < 214 ? 2 : -1;
+                if (control >= 0 && y >= buttonY && y <= buttonY + 40) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) host.onPlaybackControl(control);
+                    return true;
+                }
+            }
+            return false;
+        }
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             downX = event.getX(); downY = event.getY();
             startDragY = dragY;

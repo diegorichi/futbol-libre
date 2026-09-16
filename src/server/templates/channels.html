@@ -48,7 +48,7 @@
               {% if vpn_enabled %}<button class="vpn-button" type="button" hidden
                 data-event-id="{{ channel.event_id }}" data-source-id="{{ channel.source_id }}"
                 role="switch" aria-checked="false" aria-label="Usar VPN"
-                onclick="toggleVpn(event, this)"><span>VPN</span><span class="vpn-switch-track" aria-hidden="true"><span class="vpn-switch-knob"></span></span><span>directa</span></button>{% endif %}
+                onclick="toggleVpn(event, this)"><span>VPN</span><span class="vpn-switch-track" aria-hidden="true"><span class="vpn-switch-knob"></span></span></button>{% endif %}
             </div>
             <div class="source-player-row" hidden>
               <video id="{{ video_id }}" class="inline-player"
