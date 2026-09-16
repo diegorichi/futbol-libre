@@ -71,6 +71,18 @@ class VpnServiceTest(unittest.TestCase):
         self.assertEqual(result["url"], "https://vpn.test/live.m3u8")
         vpn.status.assert_not_called()
 
+    def test_updater_can_invalidate_cache_atomically(self):
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+        from server.services.vpn_stream_resolver import VpnStreamResolver
+
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "nested" / "vpn-cache.json"
+            cache.parent.mkdir()
+            cache.write_text('{"stale": true}\n', encoding="utf-8")
+            VpnStreamResolver.invalidate_cache(cache)
+            self.assertEqual(cache.read_text(encoding="utf-8"), "{}\n")
+
     def test_activate_runs_wg_quick_before_validation(self):
         import sys
         sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))

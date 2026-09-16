@@ -101,3 +101,7 @@ La URL web solo contiene el event_id y source_id. El servidor busca la URL VPN
 en el cache y la regenera mediante Selenium si venció o no existe. Las
 referencias a playlists, segmentos y claves se registran internamente y se
 sirven por rutas locales del mismo evento y fuente.
+
+Cada ejecución exitosa de `update-futbollibre.sh` invalida el cache VPN después
+de publicar el catálogo. El siguiente pedido obtiene una URL nueva; una
+reproducción activa no se interrumpe por la invalidación.

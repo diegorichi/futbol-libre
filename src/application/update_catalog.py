@@ -16,6 +16,7 @@ from integrations.site_change_notifier import SiteChangeNotifier
 from infrastructure.config import UpdateConfig
 from infrastructure.logging_config import LoggingConfigurator
 from integrations.threadfin import ThreadfinRefresher
+from server.services.vpn_stream_resolver import VpnStreamResolver
 
 
 SINTEL_URL = "https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8"
@@ -132,6 +133,7 @@ class FootballUpdater:
             preserve_path=self.config["agenda"] if extra_only else None,
         )
         self.threadfin.refresh()
+        VpnStreamResolver.invalidate_cache(self.config["vpn_cache"])
 
 
 if __name__ == "__main__":

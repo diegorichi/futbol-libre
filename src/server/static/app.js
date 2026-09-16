@@ -72,6 +72,7 @@ function collapseSources(sourcesRow) {
     stopInlinePlayer(playerRow.querySelector('video'));
   });
   sourcesRow.querySelectorAll('.player-button').forEach(button => { button.hidden = true; });
+  sourcesRow.querySelectorAll('.vpn-button').forEach(button => { button.hidden = true; });
 }
 
 function toggleEvent(row) {
@@ -104,7 +105,10 @@ function toggleSource(event, source) {
     const video = playerRow.querySelector('video');
     const status = playerRow.querySelector('.player-status');
     const vpnButton = source.closest('.source-block').querySelector('.vpn-button');
-    if (vpnButton) vpnButton.hidden = false;
+    if (vpnButton) {
+      vpnButton.hidden = false;
+      syncVpnSwitch(vpnButton, video.dataset.route === 'vpn');
+    }
     if (status) { status.hidden = true; status.textContent = ''; }
     ensureInlinePlayer(video, video.dataset.stream).catch(error => {
       if (status) { status.hidden = false; status.textContent = 'No se pudo cargar este canal. Probá otra fuente.'; }
@@ -116,19 +120,30 @@ function toggleSource(event, source) {
   source.setAttribute('aria-expanded', String(!expanded));
 }
 
-function useVpn(event, button) {
+function syncVpnSwitch(button, active) {
+  button.setAttribute('aria-checked', String(active));
+  button.classList.toggle('is-active', active);
+  button.closest('.source-block').classList.toggle('vpn-active', active);
+}
+
+function toggleVpn(event, button) {
   event.stopPropagation();
   const block = button.closest('.source-block');
   const video = block.querySelector('video');
   const status = block.querySelector('.player-status');
-  const eventId = encodeURIComponent(button.dataset.eventId);
-  const sourceId = encodeURIComponent(button.dataset.sourceId);
-  const relayUrl = '/api/v1/stream-relay/' + eventId + '/' + sourceId;
+  const active = button.getAttribute('aria-checked') !== 'true';
+  const target = active
+    ? '/api/v1/stream-relay/' + encodeURIComponent(button.dataset.eventId) + '/' + encodeURIComponent(button.dataset.sourceId)
+    : video.dataset.directStream;
   stopInlinePlayer(video);
-  video.dataset.stream = relayUrl;
-  if (status) { status.hidden = false; status.textContent = 'Ruta: VPN · relay activo'; }
-  ensureInlinePlayer(video, relayUrl).catch(error => {
-    if (status) { status.hidden = false; status.textContent = 'No se pudo cargar por VPN.'; }
+  video.dataset.stream = target;
+  video.dataset.route = active ? 'vpn' : 'direct';
+  syncVpnSwitch(button, active);
+  ensureInlinePlayer(video, target).catch(error => {
+    video.dataset.stream = video.dataset.directStream;
+    video.dataset.route = 'direct';
+    syncVpnSwitch(button, false);
+    if (status) { status.hidden = false; status.textContent = active ? 'No se pudo cargar por VPN.' : 'No se pudo cargar este canal.'; }
     console.error(error);
   });
 }
@@ -177,8 +192,9 @@ function openNewWindow(event, stream) {
   playerWindow.document.close();
 }
 
-function openPip(event, stream, videoId) {
-  openNewWindow(event, stream, videoId);
+function openPip(event, button) {
+  const video = button.closest('.source-block').querySelector('video');
+  openNewWindow(event, video.dataset.stream || button.dataset.stream);
 }
 
 function setExecutionButtonsDisabled(disabled) {

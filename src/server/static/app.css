@@ -65,6 +65,15 @@ progress { width: 100%; height: 1.2rem; } .progress-value { color: var(--muted);
 .badge { display: inline-block; padding: .1rem .35rem; border-radius: 4px; background: #854d0e; color: #fef08a; font-size: .62rem; font-weight: 700; letter-spacing: .03em; line-height: 1.25; white-space: nowrap; }
 .player-button { align-self: center; width: 2.75rem; height: 2.75rem; min-height: 2.75rem; margin: 0; padding: .65rem; border-radius: 7px; }
 .vpn-button { align-self: center; min-height: 2.75rem; margin: 0; padding: .55rem .75rem; border-radius: 7px; white-space: nowrap; }
+.vpn-button { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #7f1d1d; background: #3b1118; color: #fecaca; cursor: pointer; }
+.vpn-button.is-active { background: #7f1d1d; color: #fff1f2; }
+.vpn-switch-track { display: inline-flex; align-items: center; width: 2.15rem; height: 1.15rem; padding: .12rem; border-radius: 999px; background: #1f2937; }
+.vpn-switch-knob { width: .9rem; height: .9rem; border-radius: 50%; background: #cbd5e1; transform: translateX(0); transition: transform .15s ease, background .15s ease; }
+.vpn-button.is-active .vpn-switch-track { background: #fecaca; }
+.vpn-button.is-active .vpn-switch-knob { background: #7f1d1d; transform: translateX(1rem); }
+.source-block.vpn-active { border-color: #9f1239; background: #2b1117; }
+.source-block.vpn-active .source-item, .source-block.vpn-active .player-button { background: rgba(127, 29, 29, .22); }
+.source-block.vpn-active .source-player-row { background: #160b10; }
 .player-button svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state { margin: 0; padding: 2rem; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
 .agenda-date { margin: 1.5rem 0 .65rem; color: #5eead4; font-size: 1rem; letter-spacing: .08em; }

@@ -28,6 +28,7 @@ class UpdateConfig:
             "xml": setting("XML_FILE"), "events": setting("TV_EVENTS_FILE"),
             "agenda": setting("AGENDA_FILE", str(project_root / "data/agenda_web.json")),
             "threadfin": setting("THREADFIN_API_URL", "http://localhost:34400/api/"),
+            "vpn_cache": setting("STREAM_VPN_CACHE_FILE", str(project_root / "data/.vpn-stream-cache.json")),
             "ntfy": setting("NTFY_URL"),
             "parallel": setting("PARALLEL_STREAM_EXTRACTION", "0").lower() in {"1", "true", "yes", "on"},
             "workers": max(1, int(setting("STREAM_EXTRACTION_WORKERS", "4"))),

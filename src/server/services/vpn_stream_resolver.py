@@ -97,3 +97,11 @@ class VpnStreamResolver:
         temporary = self.cache_path.with_suffix(".tmp")
         temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         temporary.replace(self.cache_path)
+
+    @staticmethod
+    def invalidate_cache(cache_path):
+        path = Path(cache_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text("{}\n", encoding="utf-8")
+        temporary.replace(path)
