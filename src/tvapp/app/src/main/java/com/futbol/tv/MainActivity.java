@@ -357,7 +357,6 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         }
         int event = selectedEvent; selectedEvent = pipEvent; pipEvent = event;
         int source = selectedSource; selectedSource = pipSource; pipSource = source;
-        screen.showPlaybackOverlay();
     }
 
     private void stopDiscovery() {
@@ -438,7 +437,6 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             } else {
                 state = TvScreenView.PLAYER;
                 playback.enterFullscreen();
-                screen.showPlaybackOverlay();
             }
             screen.invalidate();
         }
@@ -527,11 +525,9 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             vpnConnecting = false;
             vpnProxyUrl = null;
             playback.switchPrimary(source);
-            screen.showPlaybackOverlay();
             return;
         }
         vpnConnecting = true;
-        screen.showPlaybackOverlay();
         serverClient.requestVpnStreamUrl(serverBase, event.id, source.id, new ServerClient.StreamUrlCallback() {
             @Override public void onSuccess(String url, String proxyUrl) {
                 main.post(() -> {
@@ -540,7 +536,6 @@ public class MainActivity extends Activity implements TvScreenView.Host {
                     vpnConnecting = false;
                     vpnProxyUrl = proxyUrl;
                     playback.switchPrimary(vpnSource, true, proxyUrl);
-                    screen.showPlaybackOverlay();
                 });
             }
             @Override public void onError(Exception error) {
@@ -548,7 +543,6 @@ public class MainActivity extends Activity implements TvScreenView.Host {
                     vpnPlayback = false;
                     vpnConnecting = false;
                     vpnProxyUrl = null;
-                    screen.showPlaybackOverlay();
                 });
             }
         });
@@ -608,7 +602,6 @@ public class MainActivity extends Activity implements TvScreenView.Host {
                 vpnConnecting = false;
                 vpnProxyUrl = null;
                 playback.switchPrimary(events.get(selectedEvent).sources.get(selectedSource));
-                screen.showPlaybackOverlay();
             }
             if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
                 pipEvent = NavigationState.clamp(pipEvent + direction, events.size());
@@ -640,7 +633,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         else if (state == TvScreenView.PREVIEW) {
             if (previewAction == 1) openPipEventPicker();
             else if (previewAction == 2) toggleVpnPreview();
-            else { state = TvScreenView.PLAYER; playback.enterFullscreen(); screen.showPlaybackOverlay(); }
+            else { state = TvScreenView.PLAYER; playback.enterFullscreen(); }
         } else if (state == TvScreenView.PIP_EVENTS) showPipSources();
         else if (state == TvScreenView.PIP_SOURCES && !events.get(pipEvent).sources.isEmpty()) startPip(events.get(pipEvent).sources.get(pipSource));
         screen.invalidate();

@@ -39,14 +39,12 @@ public final class TvScreenView extends FrameLayout {
     private final Host host;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
-    private final Handler overlayHandler = new Handler();
     private final RecyclerView eventList;
     private final RecyclerView sourceList;
     private final EventListAdapter eventAdapter;
     private SourceListAdapter sourceAdapter;
     private String listKey = "";
     private boolean listForPip;
-    private boolean playbackOverlayVisible;
     private float downX;
     private float downY;
     private float dragY;
@@ -175,7 +173,6 @@ public final class TvScreenView extends FrameLayout {
         }
         if (state == PREVIEW || state == PLAYER || state == DUAL) {
             if (state == PREVIEW) drawPreview(c);
-            if (state == PLAYER || state == DUAL) drawPlaybackOverlay(c);
             return;
         }
         c.drawColor(Color.rgb(7, 17, 31));
@@ -473,41 +470,6 @@ public final class TvScreenView extends FrameLayout {
         return 56f;
     }
 
-    public void showPlaybackOverlay() {
-        playbackOverlayVisible = true;
-        overlayHandler.removeCallbacksAndMessages(null);
-        invalidate();
-    }
-
-    private void drawPlaybackOverlay(Canvas c) {
-        if (!playbackOverlayVisible) return;
-        paint.setColor(Color.argb(205, 7, 17, 31));
-        c.drawRect(0, 0, getWidth(), d(compactLayout() ? 116 : 104), paint);
-        List<Event> events = host.events();
-        String eventLabel = host.selectedEvent() < events.size() ? events.get(host.selectedEvent()).title : "";
-        text(c, fit(eventLabel, widthDp() - 48, compactLayout() ? 15 : 18), 24, 27,
-                compactLayout() ? 15 : 18, Color.WHITE, true);
-
-        float rowY = compactLayout() ? 61 : 50;
-        float margin = compactLayout() ? 16 : 24;
-        float gap = compactLayout() ? 8 : 12;
-        float arrowWidth = compactLayout() ? 42 : 48;
-        float vpnWidth = compactLayout() ? 58 : 72;
-        float pipWidth = compactLayout() ? 54 : 62;
-        float fullscreenWidth = compactLayout() ? 50 : 58;
-        float right = widthDp() - margin;
-        float vpnX = right - vpnWidth;
-        float pipX = vpnX - gap - pipWidth;
-        float fullscreenX = pipX - gap - fullscreenWidth;
-        float sourceX = margin + arrowWidth + gap;
-        playbackControlButton(c, margin, rowY - 25, arrowWidth, "▲");
-        playbackControlButton(c, margin, rowY + 25, arrowWidth, "▼");
-        text(c, fit(host.playbackLabel(), fullscreenX - gap - sourceX, 16), sourceX, rowY + 6, 16, Color.WHITE, true);
-        playbackControlButton(c, fullscreenX, rowY - 17, fullscreenWidth, "[ ]");
-        playbackControlButton(c, pipX, rowY - 17, pipWidth, "[▲]");
-        playbackVpnButton(c, vpnX, rowY - 17, vpnWidth, host.vpnActive());
-    }
-
     private void playbackControlButton(Canvas c, float x, float y, float width, String label) {
         paint.setColor(Color.argb(235, 25, 57, 77));
         c.drawRoundRect(d(x), d(y), d(x + width), d(y + 34), d(7), d(7), paint);
@@ -554,33 +516,7 @@ public final class TvScreenView extends FrameLayout {
         // Durante reproducción esta vista es transparente y no debe tapar los
         // gestos/controles táctiles del PlayerView que está debajo.
         int state = host.state();
-        if (state == PLAYER || state == DUAL) {
-            if (compactLayout()) {
-                float x = event.getX() / density;
-                float y = event.getY() / density;
-                float rowY = 61;
-                float margin = 16;
-                float gap = 8;
-                float arrowWidth = 42;
-                float vpnWidth = 58;
-                float pipWidth = 54;
-                float fullscreenWidth = 50;
-                float right = widthDp() - margin;
-                float vpnX = right - vpnWidth;
-                float pipX = vpnX - gap - pipWidth;
-                float fullscreenX = pipX - gap - fullscreenWidth;
-                int control = x >= margin && x < margin + arrowWidth && y >= rowY - 25 && y <= rowY + 9 ? 0
-                        : x >= margin && x < margin + arrowWidth && y >= rowY + 25 && y <= rowY + 59 ? 1
-                        : x >= fullscreenX && x < fullscreenX + fullscreenWidth && y >= rowY - 17 && y <= rowY + 17 ? 2
-                        : x >= pipX && x < pipX + pipWidth && y >= rowY - 17 && y <= rowY + 17 ? 4
-                        : x >= vpnX && x < vpnX + vpnWidth && y >= rowY - 17 && y <= rowY + 17 ? 3 : -1;
-                if (control >= 0) {
-                    if (event.getAction() == MotionEvent.ACTION_UP) host.onPlaybackControl(control);
-                    return true;
-                }
-            }
-            return false;
-        }
+        if (state == PLAYER || state == DUAL) return false;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             downX = event.getX(); downY = event.getY();
             startDragY = dragY;
