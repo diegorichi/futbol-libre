@@ -89,8 +89,15 @@ El flag `STREAM_VPN_ENABLED` habilita la feature y autoriza al servidor a
 administrar WireGuard y publicar el proxy. Si queda en `false`, el servidor no
 usa ni verifica la VPN.
 
-## Pendiente
+## Relay HLS web
 
-La web queda fuera de esta iteración. Un navegador no puede recibir una URL
-externa y ser obligado por el servidor a usar Tinyproxy; más adelante habrá que
-elegir entre proxy del cliente o una URL local que funcione como relay HLS.
+La web usa el endpoint local de relay por evento y fuente. El servidor
+resuelve el stream y obtiene el manifest y sus segmentos mediante Tinyproxy;
+las URLs HLS se reescriben para que el navegador vuelva al relay.
+No hay transcodificación, pero el servidor retransmite el tráfico del video y
+por eso consume ancho de banda equivalente al stream.
+
+La URL web solo contiene el event_id y source_id. El servidor busca la URL VPN
+en el cache y la regenera mediante Selenium si venció o no existe. Las
+referencias a playlists, segmentos y claves se registran internamente y se
+sirven por rutas locales del mismo evento y fuente.

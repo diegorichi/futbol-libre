@@ -50,7 +50,7 @@ progress { width: 100%; height: 1.2rem; } .progress-value { color: var(--muted);
 .event-sources-row { margin: -.75rem 0 0; padding: .65rem .75rem .75rem; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; background: #0b1220; }
 .source-list { display: grid; gap: .4rem; }
 .source-block { border: 1px solid rgba(148, 163, 184, .2); border-radius: 7px; overflow: hidden; }
-.source-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: stretch; }
+.source-header { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: stretch; }
 .source-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; width: 100%; min-height: 3rem; margin: 0; padding: .6rem .7rem; background: transparent; border: 0; border-radius: 0; color: inherit; text-align: left; cursor: pointer; }
 .source-item:hover, .source-item:focus-visible { background: #192438; outline: none; }
 .source-item strong { min-width: 0; color: #bfdbfe; overflow-wrap: anywhere; }
@@ -64,6 +64,7 @@ progress { width: 100%; height: 1.2rem; } .progress-value { color: var(--muted);
 .channel-logo { width: 24px; height: 24px; object-fit: contain; }
 .badge { display: inline-block; padding: .1rem .35rem; border-radius: 4px; background: #854d0e; color: #fef08a; font-size: .62rem; font-weight: 700; letter-spacing: .03em; line-height: 1.25; white-space: nowrap; }
 .player-button { align-self: center; width: 2.75rem; height: 2.75rem; min-height: 2.75rem; margin: 0; padding: .65rem; border-radius: 7px; }
+.vpn-button { align-self: center; min-height: 2.75rem; margin: 0; padding: .55rem .75rem; border-radius: 7px; white-space: nowrap; }
 .player-button svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state { margin: 0; padding: 2rem; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
 .agenda-date { margin: 1.5rem 0 .65rem; color: #5eead4; font-size: 1rem; letter-spacing: .08em; }

@@ -103,6 +103,8 @@ function toggleSource(event, source) {
     playerRow.hidden = false;
     const video = playerRow.querySelector('video');
     const status = playerRow.querySelector('.player-status');
+    const vpnButton = source.closest('.source-block').querySelector('.vpn-button');
+    if (vpnButton) vpnButton.hidden = false;
     if (status) { status.hidden = true; status.textContent = ''; }
     ensureInlinePlayer(video, video.dataset.stream).catch(error => {
       if (status) { status.hidden = false; status.textContent = 'No se pudo cargar este canal. Probá otra fuente.'; }
@@ -112,6 +114,23 @@ function toggleSource(event, source) {
   const playerButton = source.closest('.source-block').querySelector('.player-button');
   if (playerButton) playerButton.hidden = expanded;
   source.setAttribute('aria-expanded', String(!expanded));
+}
+
+function useVpn(event, button) {
+  event.stopPropagation();
+  const block = button.closest('.source-block');
+  const video = block.querySelector('video');
+  const status = block.querySelector('.player-status');
+  const eventId = encodeURIComponent(button.dataset.eventId);
+  const sourceId = encodeURIComponent(button.dataset.sourceId);
+  const relayUrl = '/api/v1/stream-relay/' + eventId + '/' + sourceId;
+  stopInlinePlayer(video);
+  video.dataset.stream = relayUrl;
+  if (status) { status.hidden = false; status.textContent = 'Ruta: VPN · relay activo'; }
+  ensureInlinePlayer(video, relayUrl).catch(error => {
+    if (status) { status.hidden = false; status.textContent = 'No se pudo cargar por VPN.'; }
+    console.error(error);
+  });
 }
 
 function ensureInlinePlayer(video, stream) {

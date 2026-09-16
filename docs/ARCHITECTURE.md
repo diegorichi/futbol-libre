@@ -69,6 +69,9 @@ Esto es mantenimiento de fuentes, no extracción de eventos. La agenda principal
 - `/api/v1/events` entrega `{api_version, generated_at, refresh_after, events}`.
 - `/api/v1/discovery` entrega metadatos del servidor.
 - `/grilla` y `/canales` sirven la visualización web desde XML/M3U.
+- `/api/v1/stream-relay` entrega una URL local por evento/fuente y retransmite playlists
+  HLS/segmentos por Tinyproxy cuando la web usa VPN; no transcodifica, pero sí
+  consume el ancho de banda del servidor.
 
 ### 4. Descubrimiento del servidor por Android TV
 

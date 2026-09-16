@@ -11,6 +11,8 @@ class Channel:
     link: str
     logo: str
     proximamente: bool
+    event_id: Optional[str] = None
+    source_id: Optional[str] = None
 
     @property
     def nombre(self):

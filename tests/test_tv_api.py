@@ -1,4 +1,5 @@
 import json
+import requests
 import tempfile
 import unittest
 from pathlib import Path
@@ -121,6 +122,39 @@ class TvApiContractTest(unittest.TestCase):
         with patch("server.api_service.vpn_service.status", return_value={"enabled": False, "available": False, "reason": "disabled", "proxy_url": None, "ttl_hours": 4}):
             response = self.client.post("/api/v1/stream-url", json={"event_id": "e", "source_id": "s"})
         self.assertEqual(response.status_code, 404)
+
+    def test_vpn_relay_fetches_manifest_through_local_route(self):
+        result = {"url": "https://vpn.test/live.m3u8"}
+        with patch("server.api_service.vpn_service") as vpn, patch("server.api_service.vpn_stream_resolver") as resolver, patch("server.api_service.vpn_relay") as relay:
+            vpn.enabled = True
+            resolver.resolve.return_value = result
+            relay.fetch.return_value = (b"#EXTM3U\n", "application/vnd.apple.mpegurl")
+            response = self.client.get("/api/v1/stream-relay/event-1/source-1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, b"#EXTM3U\n")
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+        relay.fetch.assert_called_once_with("event-1", "source-1", result["url"], None)
+
+    def test_vpn_relay_maps_resolver_errors(self):
+        with patch("server.api_service.vpn_service") as vpn, patch("server.api_service.vpn_stream_resolver") as resolver:
+            vpn.enabled = True
+            resolver.resolve.side_effect = RuntimeError("VPN no disponible")
+            response = self.client.get("/api/v1/stream-relay/event-1/source-1")
+        self.assertEqual(response.status_code, 503)
+
+        with patch("server.api_service.vpn_service") as vpn, patch("server.api_service.vpn_stream_resolver") as resolver:
+            vpn.enabled = True
+            resolver.resolve.side_effect = LookupError("Evento o fuente no encontrados")
+            response = self.client.get("/api/v1/stream-relay/event-1/source-1")
+        self.assertEqual(response.status_code, 404)
+
+    def test_vpn_relay_maps_upstream_errors(self):
+        with patch("server.api_service.vpn_service") as vpn, patch("server.api_service.vpn_stream_resolver") as resolver, patch("server.api_service.vpn_relay") as relay:
+            vpn.enabled = True
+            resolver.resolve.return_value = {"url": "https://vpn.test/live.m3u8"}
+            relay.fetch.side_effect = requests.RequestException("timeout")
+            response = self.client.get("/api/v1/stream-relay/event-1/source-1")
+        self.assertEqual(response.status_code, 502)
 
     def test_vpn_stream_url_returns_resolved_url_and_proxy(self):
         status = {"enabled": True, "available": True, "reason": "ready", "proxy_url": "http://192.168.0.149:8888", "ttl_hours": 4}

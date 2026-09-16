@@ -1,4 +1,5 @@
 import os
+import requests
 import subprocess
 from datetime import datetime, timezone
 from dataclasses import asdict
@@ -6,7 +7,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from dotenv import dotenv_values, load_dotenv, set_key
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, Response, jsonify, render_template, request, send_file
 
 from server.models.task_status import TaskStatus
 from server.services.agenda_service import AgendaService
@@ -16,6 +17,7 @@ from server.services.process_runner import ProcessRunner
 from server.discovery import MdnsAdvertiser, UdpDiscoveryResponder
 from server.services.vpn_service import VpnService
 from server.services.vpn_stream_resolver import VpnStreamResolver
+from server.services.hls_relay import HlsRelay
 from infrastructure.progress import ProgressReporter
 
 
@@ -91,12 +93,14 @@ def channels_page():
             "channels.html",
             events=service.groups(),
             source_dates=service.source_update_dates(),
+            vpn_enabled=vpn_service.enabled,
         )
     except FileNotFoundError:
         return render_template(
             "channels.html",
             channels=[],
             source_dates={"xml": "No disponible", "m3u": "No disponible"},
+            vpn_enabled=vpn_service.enabled,
         )
 
 
@@ -192,6 +196,7 @@ def tv_channel_service():
 
 
 vpn_stream_resolver = VpnStreamResolver(tv_channel_service(), vpn_service, ENV_PATH)
+vpn_relay = HlsRelay(vpn_service)
 
 
 @app.get("/api/v1/health")
@@ -241,6 +246,26 @@ def vpn_stream_url():
         return jsonify({"ok": False, "error": str(error)}), 404
     except RuntimeError as error:
         return jsonify({"ok": False, "error": str(error)}), 503
+
+
+@app.get("/api/v1/stream-relay/<event_id>/<source_id>")
+@app.get("/api/v1/stream-relay/<event_id>/<source_id>/<resource_id>")
+def stream_relay(event_id, source_id, resource_id=None):
+    if not vpn_service.enabled:
+        return jsonify({"ok": False, "error": "Streaming VPN deshabilitado."}), 404
+    try:
+        result = vpn_stream_resolver.resolve(event_id, source_id)
+        body, content_type = vpn_relay.fetch(event_id, source_id, result["url"], resource_id)
+        response = Response(body, content_type=content_type)
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+    except LookupError as error:
+        return jsonify({"ok": False, "error": str(error)}), 404
+    except RuntimeError as error:
+        return jsonify({"ok": False, "error": str(error)}), 503
+    except (ValueError, requests.RequestException) as error:
+        return jsonify({"ok": False, "error": str(error)}), 502
 
 
 @app.get("/api/v1/agenda")

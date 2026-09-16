@@ -179,7 +179,10 @@ class ChannelService:
             }
             for source in event.sources:
                 if self._is_playable_url(source.url) and event.status == "available":
-                    group["channels"].append(Channel(hour, group["torneo"], group["match"], source.name, source.url, event.logo, False))
+                    group["channels"].append(Channel(
+                        hour, group["torneo"], group["match"], source.name, source.url,
+                        event.logo, False, event.id, source.id,
+                    ))
             if group["channels"] or group["proximamente"]:
                 groups.append(group)
         # Mantiene el contrato visual histórico: eventos activos primero y

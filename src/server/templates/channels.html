@@ -45,6 +45,9 @@
                 aria-label="Abrir {{ channel.canal or 'canal' }} en ventana nueva"
                 data-stream="{{ channel.link }}" data-video-id="{{ video_id }}"
                 onclick="openPip(event, this.dataset.stream, this.dataset.videoId)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-7 7M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1 1h4"/></svg></button>
+              {% if vpn_enabled %}<button class="vpn-button" type="button" hidden
+                data-event-id="{{ channel.event_id }}" data-source-id="{{ channel.source_id }}"
+                onclick="useVpn(event, this)">Usar VPN</button>{% endif %}
             </div>
             <div class="source-player-row" hidden>
               <video id="{{ video_id }}" class="inline-player"
