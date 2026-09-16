@@ -38,8 +38,8 @@ runner.recover()
 mdns = MdnsAdvertiser(port=8080)
 udp_discovery = UdpDiscoveryResponder(http_port=8080)
 vpn_service = VpnService(ENV_PATH)
-TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "19"))
-TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.9")
+TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "20"))
+TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "2.0")
 TV_APP_APK_PATH = Path(os.getenv("TV_APP_APK_PATH", PROJECT_ROOT / "output/futbol-tv-release.apk"))
 if not TV_APP_APK_PATH.is_absolute():
     TV_APP_APK_PATH = PROJECT_ROOT / TV_APP_APK_PATH

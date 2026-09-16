@@ -390,9 +390,14 @@ public final class TvScreenView extends FrameLayout {
         String position = ""; List<Event> events = host.events();
         if (!events.isEmpty() && host.selectedEvent() < events.size()) {
             Event event = events.get(host.selectedEvent());
-            if (host.selectedSource() < event.sources.size()) position = event.title + " · " + (host.selectedSource() + 1) + "/" + event.sources.size() + " · " + event.sources.get(host.selectedSource()).name;
+            position = event.title;
         }
         text(c, position, 60, getHeight() / density - 136, 15, Color.rgb(94,234,212), true);
+        if (!events.isEmpty() && host.selectedEvent() < events.size()
+                && host.selectedSource() < events.get(host.selectedEvent()).sources.size()) {
+            text(c, events.get(host.selectedEvent()).sources.get(host.selectedSource()).name,
+                    60, getHeight() / density - 112, 15, Color.WHITE, true);
+        }
         text(c, host.playerMessage(), 60, getHeight() / density - 88, 18, Color.WHITE, true);
         float buttonY = getHeight() / density - 94;
         float buttonWidth = host.vpnAvailable() ? 210 : 260;
@@ -407,8 +412,7 @@ public final class TvScreenView extends FrameLayout {
         if (!events.isEmpty() && host.selectedEvent() < events.size()) {
             Event event = events.get(host.selectedEvent());
             if (host.selectedSource() < event.sources.size()) {
-                position = event.title + " · " + (host.selectedSource() + 1) + "/" + event.sources.size()
-                        + " · " + event.sources.get(host.selectedSource()).name;
+                position = event.title;
             }
         }
 
@@ -416,16 +420,27 @@ public final class TvScreenView extends FrameLayout {
         // teléfono, que puede ocupar espacio distinto según el fabricante.
         float safeBottom = safeBottomDp();
         float bottom = heightDp() - safeBottom;
-        float top = Math.max(0, bottom - 178f);
+        float top = Math.max(0, bottom - 222f);
         paint.setColor(Color.argb(235, 7, 17, 31));
         c.drawRect(0, d(top), getWidth(), d(bottom), paint);
         text(c, fit(position, widthDp() - 48, 13), 24, top + 26, 13, Color.rgb(94, 234, 212), true);
-        text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 76, 16, Color.WHITE, true);
-        int buttonCount = host.vpnAvailable() ? 3 : 2;
-        float buttonWidth = (widthDp() - 32f - 8f * (buttonCount - 1)) / buttonCount;
-        actionButton(c, 24, top + 78, buttonWidth, "Pantalla completa", host.previewAction() == 0);
-        actionButton(c, 32 + buttonWidth, top + 78, buttonWidth, "Segundo evento", host.previewAction() == 1);
-        if (host.vpnAvailable()) vpnActionButton(c, 40 + buttonWidth * 2, top + 78, buttonWidth, host.vpnActive(), host.previewAction() == 2);
+        float rowY = top + 62;
+        playbackControlButton(c, 24, rowY - 25, 42, "▲");
+        playbackControlButton(c, 24, rowY + 25, 42, "▼");
+        String source = events.isEmpty() || host.selectedEvent() >= events.size()
+                || host.selectedSource() >= events.get(host.selectedEvent()).sources.size()
+                ? "" : events.get(host.selectedEvent()).sources.get(host.selectedSource()).name;
+        text(c, fit(source, widthDp() - 238, 16), 78, rowY + 6, 16, Color.WHITE, true);
+        float margin = 16, gap = 8, right = widthDp() - margin;
+        float vpnWidth = host.vpnAvailable() ? 58 : 0;
+        float pipWidth = 54, fullscreenWidth = 50;
+        float vpnX = right - vpnWidth;
+        float pipX = host.vpnAvailable() ? vpnX - gap - pipWidth : right - pipWidth;
+        float fullscreenX = pipX - gap - fullscreenWidth;
+        playbackControlButton(c, fullscreenX, rowY - 17, fullscreenWidth, "[ ]");
+        playbackControlButton(c, pipX, rowY - 17, pipWidth, "[▲]");
+        if (host.vpnAvailable()) playbackVpnButton(c, vpnX, rowY - 17, vpnWidth, host.vpnActive());
+        text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 112, 16, Color.WHITE, true);
     }
 
     private void actionButton(Canvas c, float x, float y, float width, String label, boolean selected) {
