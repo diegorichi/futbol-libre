@@ -10,6 +10,7 @@ class Source:
     name: str
     url: str
     user_agent: str | None = None
+    page_url: str | None = None
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any], index: int = 1) -> "Source":
@@ -18,6 +19,7 @@ class Source:
             name=str(raw.get("name") or f"Fuente {index}"),
             url=str(raw.get("url") or ""),
             user_agent=raw.get("user_agent"),
+            page_url=raw.get("page_url"),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -26,6 +28,7 @@ class Source:
             "name": self.name,
             "url": self.url,
             "user_agent": self.user_agent,
+            "page_url": self.page_url,
         }
 
 
@@ -86,4 +89,3 @@ class EventCatalogDocument:
             "api_version": self.api_version,
             "events": [event.as_dict() for event in self.events],
         }
-

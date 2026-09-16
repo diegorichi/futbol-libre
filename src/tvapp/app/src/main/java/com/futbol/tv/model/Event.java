@@ -7,12 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Event {
+    public final String id;
     public final String title;
     public final String startsAt;
     public final String logo;
     public final List<Source> sources = new ArrayList<>();
 
-    public Event(String title, String startsAt, String logo) {
+    public Event(String id, String title, String startsAt, String logo) {
+        this.id = id;
         this.title = title;
         this.startsAt = startsAt;
         this.logo = logo;
@@ -20,6 +22,7 @@ public final class Event {
 
     public static Event from(JSONObject json) throws Exception {
         Event event = new Event(
+                json.optString("id", "event"),
                 json.optString("title", "Evento"),
                 json.optString("starts_at", ""),
                 json.optString("logo", ""));

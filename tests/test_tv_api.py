@@ -27,6 +27,8 @@ class TvApiContractTest(unittest.TestCase):
         self.assertGreaterEqual(response.json["version_code"], 1)
         self.assertTrue(response.json["version_name"])
         self.assertEqual(response.json["apk_url"], "/downloads/futbol-tv.apk")
+        self.assertIn("streaming", response.json)
+        self.assertFalse(response.json["streaming"]["vpn_enabled"])
 
     def test_tv_app_page_contains_installation_instructions(self):
         response = self.client.get("/tvapp")
@@ -105,6 +107,7 @@ class TvApiContractTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json
         self.assertIn("events", payload)
+        self.assertIn("streaming", payload)
         self.assertGreater(len(payload["events"]), 0)
         event = payload["events"][0]
         self.assertTrue(event["id"])
@@ -113,6 +116,20 @@ class TvApiContractTest(unittest.TestCase):
         self.assertTrue(event["sources"])
         self.assertTrue(event["sources"][0]["url"].endswith("&ip=186.65.68.74") or ".m3u8" in event["sources"][0]["url"])
         json.dumps(payload)
+
+    def test_vpn_stream_url_requires_enabled_feature(self):
+        with patch("server.api_service.vpn_service.status", return_value={"enabled": False, "available": False, "reason": "disabled", "proxy_url": None, "ttl_hours": 4}):
+            response = self.client.post("/api/v1/stream-url", json={"event_id": "e", "source_id": "s"})
+        self.assertEqual(response.status_code, 404)
+
+    def test_vpn_stream_url_returns_resolved_url_and_proxy(self):
+        status = {"enabled": True, "available": True, "reason": "ready", "proxy_url": "http://192.168.0.149:8888", "ttl_hours": 4}
+        result = {"event_id": "e", "source_id": "s", "url": "https://vpn.test/live.m3u8", "expires_at": "2099-01-01T00:00:00+00:00"}
+        with patch("server.api_service.vpn_service.status", return_value=status), patch("server.api_service.vpn_stream_resolver.resolve", return_value=result):
+            response = self.client.post("/api/v1/stream-url", json={"event_id": "e", "source_id": "s"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["url"], result["url"])
+        self.assertEqual(response.json["proxy_url"], status["proxy_url"])
 
     def test_structured_catalog_preserves_multiple_sources(self):
         from server.services.channel_service import ChannelService

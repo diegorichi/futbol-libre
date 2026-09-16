@@ -63,6 +63,10 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     private int pipSource = 0;
     private int pipSourceOffset = 0;
     private int previewAction = 0;
+    private StreamingCapabilities streaming = StreamingCapabilities.disabled();
+    private boolean vpnPlayback;
+    private boolean vpnConnecting;
+    private String vpnProxyUrl;
     private boolean resumePlaybackOnStart;
     private final Map<String, Bitmap> logos = new HashMap<>();
     private String playerMessage = "";
@@ -187,13 +191,14 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             screen.invalidate();
         }
         serverClient.loadEvents(serverBase, new ServerClient.EventsCallback() {
-            @Override public void onSuccess(List<Event> loaded) {
+            @Override public void onSuccess(List<Event> loaded, StreamingCapabilities capabilities) {
                 main.post(() -> {
                     // Una respuesta vieja no puede devolvernos al menú si el
                     // usuario ya empezó a reproducir un evento.
                     if (!showLoading && state != TvScreenView.EVENTS) return;
                     events.clear();
                     events.addAll(loaded);
+                    streaming = capabilities == null ? StreamingCapabilities.disabled() : capabilities;
                     if (showLoading) state = TvScreenView.EVENTS;
                     selectedEvent = NavigationState.clamp(selectedEvent, events.size());
                     eventOffset = NavigationState.offsetFor(selectedEvent, events.size(), screen.visibleRows(), listFocusPosition());
@@ -270,9 +275,45 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     private void preview(Source source) {
         state = TvScreenView.PREVIEW;
         previewAction = 0;
+        vpnPlayback = false;
+        vpnConnecting = false;
+        vpnProxyUrl = null;
         playerMessage = "Cargando preview...";
         playback.preview(source);
         screen.invalidate();
+    }
+
+    private void requestVpnPreview() {
+        if (!vpnAvailable() || events.isEmpty()) return;
+        Event event = events.get(selectedEvent);
+        Source source = event.sources.get(selectedSource);
+        playerMessage = "Obteniendo URL por VPN...";
+        vpnConnecting = true;
+        playback.releaseAll();
+        screen.invalidate();
+        serverClient.requestVpnStreamUrl(serverBase, event.id, source.id, new ServerClient.StreamUrlCallback() {
+            @Override public void onSuccess(String url, String proxyUrl) {
+                main.post(() -> {
+                    Source vpnSource = new Source(source.id, source.name, url, source.userAgent, source.pageUrl);
+                    vpnPlayback = true;
+                    vpnConnecting = false;
+                    vpnProxyUrl = proxyUrl;
+                    playerMessage = "Cargando por VPN...";
+                    playback.preview(vpnSource, true, proxyUrl);
+                    screen.invalidate();
+                });
+            }
+
+            @Override public void onError(Exception error) {
+                main.post(() -> {
+                    vpnPlayback = false;
+                    vpnConnecting = false;
+                    vpnProxyUrl = null;
+                    playerMessage = "No se pudo preparar la reproducción por VPN";
+                    screen.invalidate();
+                });
+            }
+        });
     }
 
     private void openPipEventPicker() {
@@ -374,14 +415,17 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             // La acción de la derecha del panel inferior agrega PiP; el resto
             // abre el reproductor principal, igual que OK en el control remoto.
             float height = screen.getHeight() / screen.getResources().getDisplayMetrics().density;
-            float half = (screen.getWidth() / screen.getResources().getDisplayMetrics().density) / 2f;
+            float width = screen.getWidth() / screen.getResources().getDisplayMetrics().density;
+            float half = width / 2f;
             boolean actionArea = screen.isCompactLayout()
-                    ? y >= height - 160f && y <= height - 100f
+                    ? y >= height - 132f && y <= height - 68f
                     : y >= height - 96f;
             if (!actionArea) return;
-            boolean pip = x >= half;
-            if (pip) {
+            int action = vpnAvailable() ? (x < width / 3f ? 0 : x < width * 2f / 3f ? 1 : 2) : (x >= half ? 1 : 0);
+            if (action == 1) {
                 openPipEventPicker();
+            } else if (action == 2) {
+                requestVpnPreview();
             } else {
                 state = TvScreenView.PLAYER;
                 playback.enterFullscreen();
@@ -410,6 +454,9 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     @Override public int pipSource() { return pipSource; }
     @Override public int pipSourceOffset() { return pipSourceOffset; }
     @Override public int previewAction() { return previewAction; }
+    @Override public boolean vpnAvailable() { return streaming.vpnEnabled && streaming.vpnAvailable; }
+    @Override public boolean vpnActive() { return vpnPlayback; }
+    @Override public String playbackRoute() { return vpnConnecting ? "Ruta: VPN · conectando..." : vpnPlayback ? "Ruta: VPN · proxy activo" : "Ruta: directa"; }
     @Override public String playerMessage() { return playerMessage; }
     @Override public Bitmap logo(String url) { return logos.get(url); }
     @Override public String playbackLabel() {
@@ -511,7 +558,11 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             screen.invalidate(); return;
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (state == TvScreenView.PREVIEW) { previewAction = keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? 0 : 1; screen.invalidate(); return; }
+            if (state == TvScreenView.PREVIEW) {
+                int actionCount = vpnAvailable() ? 3 : 2;
+                previewAction = Math.max(0, Math.min(actionCount - 1, previewAction + (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1)));
+                screen.invalidate(); return;
+            }
             if (state == TvScreenView.DUAL && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 promotePipToPrimary(); return;
             }
@@ -525,6 +576,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         else if (state == TvScreenView.SOURCES && !events.get(selectedEvent).sources.isEmpty()) preview(events.get(selectedEvent).sources.get(selectedSource));
         else if (state == TvScreenView.PREVIEW && playback.isReady()) {
             if (previewAction == 1) openPipEventPicker();
+            else if (previewAction == 2) requestVpnPreview();
             else { state = TvScreenView.PLAYER; playback.enterFullscreen(); }
         } else if (state == TvScreenView.PIP_EVENTS) showPipSources();
         else if (state == TvScreenView.PIP_SOURCES && !events.get(pipEvent).sources.isEmpty()) startPip(events.get(pipEvent).sources.get(pipSource));

@@ -118,6 +118,7 @@ class ChannelService:
                     name=source_name,
                     url=url,
                     user_agent=source_entry.get("user_agent"),
+                    page_url=source_entry.get("page_url"),
                 ))
             group_key = (re.sub(r"[^a-z0-9]+", " ", event_name.lower()).strip(), starts_at[:16])
             group = grouped.setdefault(group_key, {
@@ -149,7 +150,7 @@ class ChannelService:
                 starts_at=event.starts_at,
                 status=event.status,
                 sources=[
-                    EventSource(source.id, source.name, source.url, source.user_agent)
+                    EventSource(source.id, source.name, source.url, source.user_agent, source.page_url)
                     for source in event.sources
                     if self._is_playable_url(source.url)
                 ],

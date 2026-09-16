@@ -26,7 +26,7 @@ class EventProjector:
             sources = []
             for index, option in enumerate(event.get("opciones", []), 1):
                 link, origin = stream_results.get(option.get("url"), (None, None))
-                if link: sources.append({"id": f"source-{index}", "name": option.get("canal") or origin or f"Fuente {index}", "url": link, "user_agent": USER_AGENT})
+                if link: sources.append({"id": f"source-{index}", "name": option.get("canal") or origin or f"Fuente {index}", "url": link, "user_agent": USER_AGENT, "page_url": option.get("url")})
             try: starts_at = self.catalog.nearest_time(hour, now).isoformat()
             except (TypeError, ValueError): starts_at = now.isoformat()
             catalog_event = CatalogEvent(

@@ -23,6 +23,7 @@ class EventSource:
     name: str
     url: str
     user_agent: Optional[str] = None
+    page_url: Optional[str] = None
 
 
 @dataclass(frozen=True)

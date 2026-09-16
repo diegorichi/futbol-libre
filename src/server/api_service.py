@@ -14,6 +14,8 @@ from server.services.catalog_service import CatalogService
 from server.services.web_agenda_service import WebAgendaService
 from server.services.process_runner import ProcessRunner
 from server.discovery import MdnsAdvertiser, UdpDiscoveryResponder
+from server.services.vpn_service import VpnService
+from server.services.vpn_stream_resolver import VpnStreamResolver
 from infrastructure.progress import ProgressReporter
 
 
@@ -33,8 +35,9 @@ progress = ProgressReporter(str(PROGRESS_PATH))
 runner.recover()
 mdns = MdnsAdvertiser(port=8080)
 udp_discovery = UdpDiscoveryResponder(http_port=8080)
-TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "13"))
-TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.3")
+vpn_service = VpnService(ENV_PATH)
+TV_APP_VERSION_CODE = int(os.getenv("TV_APP_VERSION_CODE", "16"))
+TV_APP_VERSION_NAME = os.getenv("TV_APP_VERSION_NAME", "1.6")
 TV_APP_APK_PATH = Path(os.getenv("TV_APP_APK_PATH", PROJECT_ROOT / "output/futbol-tv-release.apk"))
 if not TV_APP_APK_PATH.is_absolute():
     TV_APP_APK_PATH = PROJECT_ROOT / TV_APP_APK_PATH
@@ -188,9 +191,22 @@ def tv_channel_service():
     )
 
 
+vpn_stream_resolver = VpnStreamResolver(tv_channel_service(), vpn_service, ENV_PATH)
+
+
 @app.get("/api/v1/health")
 def tv_health():
     return jsonify({"ok": True, "service": "futbol-server", "api_version": "v1"})
+
+
+def stream_capabilities():
+    status = vpn_service.capability()
+    return {
+        "vpn_enabled": status["enabled"],
+        "vpn_available": status["available"],
+        "vpn_proxy_url": status["proxy_url"],
+        "vpn_url_ttl_hours": status["ttl_hours"],
+    }
 
 
 @app.get("/api/v1/events")
@@ -201,10 +217,30 @@ def tv_events():
             "api_version": "v1",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "refresh_after": 60,
+            "streaming": stream_capabilities(),
             "events": events,
         })
     except FileNotFoundError:
-        return jsonify({"api_version": "v1", "generated_at": None, "refresh_after": 60, "events": []})
+        return jsonify({"api_version": "v1", "generated_at": None, "refresh_after": 60, "streaming": stream_capabilities(), "events": []})
+
+
+@app.post("/api/v1/stream-url")
+def vpn_stream_url():
+    payload = request.get_json(silent=True) or {}
+    event_id = str(payload.get("event_id") or "").strip()
+    source_id = str(payload.get("source_id") or "").strip()
+    if not event_id or not source_id:
+        return jsonify({"ok": False, "error": "event_id y source_id son obligatorios."}), 400
+    status = vpn_service.status()
+    if not status["enabled"]:
+        return jsonify({"ok": False, "error": "Streaming VPN deshabilitado."}), 404
+    try:
+        result = vpn_stream_resolver.resolve(event_id, source_id, force=bool(payload.get("force")))
+        return jsonify({"ok": True, **result, "proxy_url": status["proxy_url"]})
+    except LookupError as error:
+        return jsonify({"ok": False, "error": str(error)}), 404
+    except RuntimeError as error:
+        return jsonify({"ok": False, "error": str(error)}), 503
 
 
 @app.get("/api/v1/agenda")
@@ -215,7 +251,7 @@ def web_agenda():
 
 @app.get("/api/v1/discovery")
 def tv_discovery():
-    return jsonify({"name": "Futbol Server", "api_version": "v1", "events_path": "/api/v1/events"})
+    return jsonify({"name": "Futbol Server", "api_version": "v1", "events_path": "/api/v1/events", "streaming": stream_capabilities()})
 
 
 @app.get("/tvapp")
@@ -231,6 +267,7 @@ def tv_app_info():
         "version_name": TV_APP_VERSION_NAME,
         "apk_url": "/downloads/futbol-tv.apk",
         "changelog": "Actualización de Fútbol TV",
+        "streaming": stream_capabilities(),
     })
 
 

@@ -30,7 +30,7 @@ public final class TvScreenView extends FrameLayout {
         List<Event> events();
         int selectedEvent(); int eventOffset(); int selectedSource(); int sourceOffset();
         int pipEvent(); int pipEventOffset(); int pipSource(); int pipSourceOffset();
-        int previewAction(); String playerMessage(); Bitmap logo(String url); String playbackLabel();
+        int previewAction(); boolean vpnAvailable(); boolean vpnActive(); String playbackRoute(); String playerMessage(); Bitmap logo(String url); String playbackLabel();
         String updateVersion(); String updateStatus();
         void onBack(); void onDpad(int keyCode); void onConfirm(); void onTouch(float x, float y); void onSwipe(boolean down); int onScroll(float deltaY);
         void onEventTap(int index, boolean forPip); void onSourceTap(int index, boolean forPip);
@@ -392,11 +392,14 @@ public final class TvScreenView extends FrameLayout {
             Event event = events.get(host.selectedEvent());
             if (host.selectedSource() < event.sources.size()) position = event.title + " · " + (host.selectedSource() + 1) + "/" + event.sources.size() + " · " + event.sources.get(host.selectedSource()).name;
         }
-        text(c, position, 60, getHeight() / density - 112, 15, Color.rgb(94,234,212), true);
+        text(c, position, 60, getHeight() / density - 136, 15, Color.rgb(94,234,212), true);
+        text(c, host.playbackRoute(), 60, getHeight() / density - 112, 15, Color.rgb(94,234,212), true);
         text(c, host.playerMessage(), 60, getHeight() / density - 88, 18, Color.WHITE, true);
         float buttonY = getHeight() / density - 94;
-        actionButton(c, 60, buttonY, 260, "Pantalla completa", host.previewAction() == 0);
-        actionButton(c, 332, buttonY, 260, "Agregar segundo evento", host.previewAction() == 1);
+        float buttonWidth = host.vpnAvailable() ? 210 : 260;
+        actionButton(c, 60, buttonY, buttonWidth, "Pantalla completa", host.previewAction() == 0);
+        actionButton(c, 68 + buttonWidth, buttonY, buttonWidth, "Agregar segundo evento", host.previewAction() == 1);
+        if (host.vpnAvailable()) actionButton(c, 76 + buttonWidth * 2, buttonY, buttonWidth, host.vpnActive() ? "VPN activa" : "Usar VPN", host.previewAction() == 2);
         text(c, "◀ ▶ elegir acción · ▲ ▼ cambiar fuente · OK confirmar · Back: fuentes", 60, getHeight() / density - 18, 14, Color.LTGRAY, false);
     }
 
@@ -419,10 +422,13 @@ public final class TvScreenView extends FrameLayout {
         paint.setColor(Color.argb(235, 7, 17, 31));
         c.drawRect(0, d(top), getWidth(), d(bottom), paint);
         text(c, fit(position, widthDp() - 48, 13), 24, top + 26, 13, Color.rgb(94, 234, 212), true);
-        text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 58, 16, Color.WHITE, true);
-        float buttonWidth = (widthDp() - 56) / 2f;
+        text(c, fit(host.playbackRoute(), widthDp() - 48, 13), 24, top + 50, 13, Color.rgb(94, 234, 212), true);
+        text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 76, 16, Color.WHITE, true);
+        int buttonCount = host.vpnAvailable() ? 3 : 2;
+        float buttonWidth = (widthDp() - 32f - 8f * (buttonCount - 1)) / buttonCount;
         actionButton(c, 24, top + 78, buttonWidth, "Pantalla completa", host.previewAction() == 0);
         actionButton(c, 32 + buttonWidth, top + 78, buttonWidth, "Segundo evento", host.previewAction() == 1);
+        if (host.vpnAvailable()) actionButton(c, 40 + buttonWidth * 2, top + 78, buttonWidth, host.vpnActive() ? "VPN activa" : "Usar VPN", host.previewAction() == 2);
         text(c, fit("Tap para elegir · Deslizá para cambiar fuente · Back: fuentes", widthDp() - 48, 13), 24, bottom - 14, 13, Color.LTGRAY, false);
     }
 
@@ -465,6 +471,7 @@ public final class TvScreenView extends FrameLayout {
         paint.setTextSize(d(15)); paint.setTypeface(Typeface.DEFAULT_BOLD);
         float labelWidth = paint.measureText(label);
         text(c, label, getWidth() / density - labelWidth / density - 35, bottom, 15, Color.rgb(94,234,212), true);
+        text(c, host.playbackRoute(), 35, 28, 15, Color.rgb(94,234,212), true);
     }
 
     private void drawPipSources(Canvas c) {

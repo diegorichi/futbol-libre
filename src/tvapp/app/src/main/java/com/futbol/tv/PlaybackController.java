@@ -1,6 +1,7 @@
 package com.futbol.tv;
 
 import android.content.Context;
+import android.app.Activity;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -9,11 +10,16 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.datasource.okhttp.OkHttpDataSource;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.hls.HlsMediaSource;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.AspectRatioFrameLayout;
+
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import okhttp3.OkHttpClient;
 
 import com.futbol.tv.model.Source;
 
@@ -44,13 +50,15 @@ public final class PlaybackController {
         pipView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
     }
 
-    public void preview(Source source) {
+    public void preview(Source source) { preview(source, false, null); }
+
+    public void preview(Source source, boolean useProxy, String proxyUrl) {
         releasePrimary();
         setPreviewBounds();
         pipView.setVisibility(View.GONE);
         mainView.setUseController(false);
         mainView.setVisibility(View.VISIBLE);
-        primary = buildPlayer(source, false);
+        primary = buildPlayer(source, false, useProxy, proxyUrl);
         mainView.setPlayer(primary);
         primary.prepare();
         primary.play();
@@ -61,6 +69,7 @@ public final class PlaybackController {
     }
 
     public void enterFullscreen() {
+        setKeepScreenOn(true);
         setFullscreenBounds();
         mainView.setUseController(true);
         mainView.setVisibility(View.VISIBLE);
@@ -77,6 +86,17 @@ public final class PlaybackController {
         mainView.setUseController(true);
         mainView.setVisibility(View.VISIBLE);
         primary = buildPlayer(source, false);
+        mainView.setPlayer(primary);
+        primary.prepare();
+        primary.play();
+    }
+
+    public void switchPrimary(Source source, boolean useProxy, String proxyUrl) {
+        releasePrimary();
+        setFullscreenBounds();
+        mainView.setUseController(true);
+        mainView.setVisibility(View.VISIBLE);
+        primary = buildPlayer(source, false, useProxy, proxyUrl);
         mainView.setPlayer(primary);
         primary.prepare();
         primary.play();
@@ -100,6 +120,7 @@ public final class PlaybackController {
     }
 
     public void showPreview() {
+        setKeepScreenOn(false);
         setPreviewBounds();
         mainView.setUseController(false);
         mainView.setVisibility(View.VISIBLE);
@@ -110,6 +131,7 @@ public final class PlaybackController {
     }
 
     public void releaseAll() {
+        setKeepScreenOn(false);
         releasePip();
         releasePrimary();
         pipView.setVisibility(View.GONE);
@@ -165,10 +187,18 @@ public final class PlaybackController {
         }
     }
 
-    private ExoPlayer buildPlayer(Source source, boolean muted) {
-        DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
-                .setAllowCrossProtocolRedirects(true)
-                .setUserAgent(source.userAgent == null ? "FutbolTV/0.1" : source.userAgent);
+    private ExoPlayer buildPlayer(Source source, boolean muted, boolean useProxy, String proxyUrl) {
+        String userAgent = source.userAgent == null ? "FutbolTV/0.1" : source.userAgent;
+        androidx.media3.datasource.HttpDataSource.Factory http;
+        if (useProxy) {
+            Proxy proxy = parseProxy(proxyUrl);
+            OkHttpClient client = new OkHttpClient.Builder().proxy(proxy).build();
+            http = new OkHttpDataSource.Factory(client).setUserAgent(userAgent);
+        } else {
+            http = new DefaultHttpDataSource.Factory()
+                    .setAllowCrossProtocolRedirects(true)
+                    .setUserAgent(userAgent);
+        }
         DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
                 .setBufferDurationsMs(
                         MIN_BUFFER_MS,
@@ -193,6 +223,19 @@ public final class PlaybackController {
         return result;
     }
 
+    private ExoPlayer buildPlayer(Source source, boolean muted) {
+        return buildPlayer(source, muted, false, null);
+    }
+
+    private static Proxy parseProxy(String proxyUrl) {
+        try {
+            java.net.URL url = new java.net.URL(proxyUrl);
+            return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(url.getHost(), url.getPort()));
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Proxy VPN inválido", error);
+        }
+    }
+
     private void releasePrimary() {
         if (primary != null) { primary.release(); primary = null; }
     }
@@ -203,6 +246,13 @@ public final class PlaybackController {
 
     private void setFullscreenBounds() {
         mainView.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
+    }
+
+    private void setKeepScreenOn(boolean keepScreenOn) {
+        if (context instanceof Activity) {
+            if (keepScreenOn) ((Activity) context).getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            else ((Activity) context).getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
     }
 
     private void setPreviewBounds() {

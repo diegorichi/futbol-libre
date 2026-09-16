@@ -11,9 +11,10 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 
 class BrowserDriverFactory:
-    def __init__(self, user_agent=USER_AGENT, headless=None):
+    def __init__(self, user_agent=USER_AGENT, headless=None, proxy_url=None):
         self.user_agent = user_agent
         self.headless = headless
+        self.proxy_url = proxy_url
 
     def create(self):
         options = webdriver.ChromeOptions()
@@ -21,6 +22,8 @@ class BrowserDriverFactory:
         options.add_argument("--window-size=1440,900")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        if self.proxy_url:
+            options.add_argument(f"--proxy-server={self.proxy_url}")
         chrome_binary = os.getenv("CHROME_BINARY")
         if chrome_binary:
             options.binary_location = chrome_binary
