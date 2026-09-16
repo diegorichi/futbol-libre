@@ -417,27 +417,42 @@ public final class TvScreenView extends FrameLayout {
         // teléfono, que puede ocupar espacio distinto según el fabricante.
         float safeBottom = safeBottomDp();
         float bottom = heightDp() - safeBottom;
-        float top = Math.max(0, bottom - 222f);
+        boolean portrait = heightDp() >= widthDp();
+        float panelHeight = portrait ? 232f : 156f;
+        float top = Math.max(0, bottom - panelHeight);
         paint.setColor(Color.argb(235, 7, 17, 31));
         c.drawRect(0, d(top), getWidth(), d(bottom), paint);
         text(c, fit(position, widthDp() - 48, 13), 24, top + 26, 13, Color.rgb(94, 234, 212), true);
-        float rowY = top + 62;
-        playbackControlButton(c, 24, rowY - 25, 42, "▲");
-        playbackControlButton(c, 24, rowY + 25, 42, "▼");
+        float rowY = top + (portrait ? 62 : 48);
+        float margin = 16;
+        float gap = 8;
+        float arrowWidth = 42;
+        playbackControlButton(c, margin, rowY - 25, arrowWidth, "▲");
+        playbackControlButton(c, margin, rowY + 25, arrowWidth, "▼");
         String source = events.isEmpty() || host.selectedEvent() >= events.size()
                 || host.selectedSource() >= events.get(host.selectedEvent()).sources.size()
                 ? "" : events.get(host.selectedEvent()).sources.get(host.selectedSource()).name;
-        text(c, fit(source, widthDp() - 238, 16), 78, rowY + 6, 16, Color.WHITE, true);
-        float margin = 16, gap = 8, right = widthDp() - margin;
-        float vpnWidth = host.vpnAvailable() ? 58 : 0;
-        float pipWidth = 54, fullscreenWidth = 50;
-        float vpnX = right - vpnWidth;
-        float pipX = host.vpnAvailable() ? vpnX - gap - pipWidth : right - pipWidth;
-        float fullscreenX = pipX - gap - fullscreenWidth;
-        playbackControlButton(c, fullscreenX, rowY - 17, fullscreenWidth, "[ ]");
-        playbackControlButton(c, pipX, rowY - 17, pipWidth, "[▲]");
-        if (host.vpnAvailable()) playbackVpnButton(c, vpnX, rowY - 17, vpnWidth, host.vpnActive());
-        text(c, fit(host.playerMessage(), widthDp() - 48, 16), 24, top + 112, 16, Color.WHITE, true);
+        text(c, fit(source, widthDp() - 94, 16), margin + arrowWidth + gap, rowY + 6, 16, Color.WHITE, true);
+        if (portrait) {
+            int buttonCount = host.vpnAvailable() ? 3 : 2;
+            float buttonWidth = (widthDp() - 2 * margin - gap * (buttonCount - 1)) / buttonCount;
+            float buttonY = top + 108;
+            playbackControlButton(c, margin, buttonY, buttonWidth, "[ ]");
+            playbackControlButton(c, margin + buttonWidth + gap, buttonY, buttonWidth, "[▲]");
+            if (host.vpnAvailable()) playbackVpnButton(c, margin + (buttonWidth + gap) * 2, buttonY, buttonWidth, host.vpnActive());
+            text(c, fit(host.playerMessage(), widthDp() - 2 * margin, 16), margin, top + 177, 16, Color.WHITE, true);
+        } else {
+            float right = widthDp() - margin;
+            float vpnWidth = host.vpnAvailable() ? 58 : 0;
+            float pipWidth = 54, fullscreenWidth = 50;
+            float vpnX = right - vpnWidth;
+            float pipX = host.vpnAvailable() ? vpnX - gap - pipWidth : right - pipWidth;
+            float fullscreenX = pipX - gap - fullscreenWidth;
+            playbackControlButton(c, fullscreenX, rowY - 17, fullscreenWidth, "[ ]");
+            playbackControlButton(c, pipX, rowY - 17, pipWidth, "[▲]");
+            if (host.vpnAvailable()) playbackVpnButton(c, vpnX, rowY - 17, vpnWidth, host.vpnActive());
+            text(c, fit(host.playerMessage(), widthDp() - 2 * margin, 16), margin, top + 130, 16, Color.WHITE, true);
+        }
     }
 
     private void actionButton(Canvas c, float x, float y, float width, String label, boolean selected) {
@@ -475,7 +490,7 @@ public final class TvScreenView extends FrameLayout {
         c.drawRoundRect(d(x), d(y), d(x + width), d(y + 34), d(7), d(7), paint);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(d(1));
-        paint.setColor(Color.rgb(94, 234, 212));
+        paint.setColor(Color.rgb(71, 96, 120));
         c.drawRoundRect(d(x), d(y), d(x + width), d(y + 34), d(7), d(7), paint);
         paint.setStyle(Paint.Style.FILL);
         text(c, label, x + 9, y + 22, 13, Color.WHITE, true);
@@ -517,6 +532,13 @@ public final class TvScreenView extends FrameLayout {
         // gestos/controles táctiles del PlayerView que está debajo.
         int state = host.state();
         if (state == PLAYER || state == DUAL) return false;
+        if (state == PREVIEW && compactLayout()) {
+            int control = previewControlAt(event.getX() / density, event.getY() / density);
+            if (control >= 0) {
+                if (event.getAction() == MotionEvent.ACTION_UP) host.onPlaybackControl(control);
+                return true;
+            }
+        }
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             downX = event.getX(); downY = event.getY();
             startDragY = dragY;
@@ -557,6 +579,35 @@ public final class TvScreenView extends FrameLayout {
             invalidate();
         }
         return true;
+    }
+
+    private int previewControlAt(float x, float y) {
+        boolean portrait = heightDp() >= widthDp();
+        float bottom = heightDp() - safeBottomDp();
+        float top = Math.max(0, bottom - (portrait ? 232f : 156f));
+        float rowY = top + (portrait ? 62 : 48);
+        float margin = 16, gap = 8;
+        if (x >= margin && x < margin + 42 && y >= rowY - 25 && y <= rowY + 9) return 0;
+        if (x >= margin && x < margin + 42 && y >= rowY + 25 && y <= rowY + 59) return 1;
+        if (portrait) {
+            int buttonCount = host.vpnAvailable() ? 3 : 2;
+            float buttonWidth = (widthDp() - 2 * margin - gap * (buttonCount - 1)) / buttonCount;
+            float buttonY = top + 108;
+            if (x >= margin && x < margin + buttonWidth && y >= buttonY && y <= buttonY + 34) return 2;
+            if (x >= margin + buttonWidth + gap && x < margin + 2 * buttonWidth + gap && y >= buttonY && y <= buttonY + 34) return 4;
+            if (host.vpnAvailable() && x >= margin + 2 * (buttonWidth + gap) && y >= buttonY && y <= buttonY + 34) return 3;
+            return -1;
+        }
+        float right = widthDp() - margin;
+        float vpnWidth = host.vpnAvailable() ? 58 : 0;
+        float pipWidth = 54, fullscreenWidth = 50;
+        float vpnX = right - vpnWidth;
+        float pipX = host.vpnAvailable() ? vpnX - gap - pipWidth : right - pipWidth;
+        float fullscreenX = pipX - gap - fullscreenWidth;
+        if (x >= fullscreenX && x < fullscreenX + fullscreenWidth && y >= rowY - 17 && y <= rowY + 17) return 2;
+        if (x >= pipX && x < pipX + pipWidth && y >= rowY - 17 && y <= rowY + 17) return 4;
+        if (host.vpnAvailable() && x >= vpnX && x < vpnX + vpnWidth && y >= rowY - 17 && y <= rowY + 17) return 3;
+        return -1;
     }
 
     private boolean isScrollableState(int state) {

@@ -510,7 +510,8 @@ public class MainActivity extends Activity implements TvScreenView.Host {
             playback.enterFullscreen();
             screen.invalidate();
         } else if (control == 3) {
-            toggleVpnPlayback();
+            if (state == TvScreenView.PREVIEW) toggleVpnPreview();
+            else toggleVpnPlayback();
         } else if (control == 4) {
             openPipEventPicker();
         }

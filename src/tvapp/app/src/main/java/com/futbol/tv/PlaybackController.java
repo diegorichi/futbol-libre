@@ -256,7 +256,9 @@ public final class PlaybackController {
 
     private void setPreviewBounds() {
         int availableWidth = context.getResources().getDisplayMetrics().widthPixels - dp(32);
-        int availableHeight = context.getResources().getDisplayMetrics().heightPixels - dp(220);
+        boolean portrait = context.getResources().getConfiguration().orientation
+                == android.content.res.Configuration.ORIENTATION_PORTRAIT;
+        int availableHeight = context.getResources().getDisplayMetrics().heightPixels - dp(portrait ? 232 : 156);
         int width = Math.min(dp(640), availableWidth);
         int height = Math.min(Math.round(width * 9f / 16f), Math.max(dp(120), availableHeight));
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
