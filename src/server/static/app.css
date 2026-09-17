@@ -1,7 +1,8 @@
 :root { color-scheme: dark; --bg: #0f172a; --card: #1e293b; --line: #334155; --blue: #2563eb; --muted: #94a3b8; }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; overflow-x: hidden; background: var(--bg); color: #f8fafc; font: 16px/1.5 system-ui, sans-serif; }
-nav { display: flex; flex-wrap: wrap; gap: .5rem .75rem; padding: .6rem max(1rem, calc((100% - 980px) / 2)); border-bottom: 1px solid var(--line); }
+nav { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; padding: .6rem max(1rem, calc((100% - 980px) / 2)); border-bottom: 1px solid var(--line); background: var(--bg); }
+nav .site-logo { width: 2.25rem; height: 2.25rem; flex: 0 0 auto; object-fit: contain; }
 nav a { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .35rem .5rem; border-radius: 6px; color: #bfdbfe; text-decoration: none; touch-action: manipulation; }
 nav a:hover, nav a:focus-visible, nav a[aria-current="page"] { background: #192438; color: #fff; }
 main { width: min(100% - 2rem, 980px); margin: clamp(1rem, 4vw, 2rem) auto; }

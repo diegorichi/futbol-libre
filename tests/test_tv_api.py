@@ -73,8 +73,18 @@ class TvApiContractTest(unittest.TestCase):
     def test_server_menu_links_tv_app(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
+        self.assertIn('class="site-logo"', response.text)
+        self.assertIn('href="/static/favicon.svg"', response.text)
+        self.assertIn(">Actualizar fuentes</a>", response.text)
+        self.assertNotIn(">Actualizar URL</a>", response.text)
         self.assertIn('href="/tvapp"', response.text)
         self.assertIn('href="/agenda"', response.text)
+
+    def test_web_menu_stays_visible_when_scrolling(self):
+        response = self.client.get("/static/app.css")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("position: sticky", response.text)
+        self.assertIn("top: 0", response.text)
 
     def test_executor_contains_search_link_in_new_tab(self):
         response = self.client.get("/")
