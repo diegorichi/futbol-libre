@@ -214,6 +214,7 @@ public final class PlaybackController {
         result.setVolume(muted ? 0f : 1f);
         result.addListener(new Player.Listener() {
             @Override public void onPlaybackStateChanged(int playbackState) {
+                if (playbackState == Player.STATE_READY) listener.onMessage("");
                 if (playbackState == Player.STATE_ENDED) listener.onMessage("El stream terminó");
             }
             @Override public void onPlayerError(PlaybackException error) {
@@ -263,7 +264,8 @@ public final class PlaybackController {
         int width = Math.min(dp(640), availableWidth);
         int height = Math.min(Math.round(width * 9f / 16f), Math.max(dp(120), availableHeight));
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
-        params.gravity = Gravity.CENTER;
+        params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        params.topMargin = dp(24);
         mainView.setLayoutParams(params);
     }
 

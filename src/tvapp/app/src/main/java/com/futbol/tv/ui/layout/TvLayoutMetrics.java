@@ -86,22 +86,26 @@ public final class TvLayoutMetrics {
             if (!compact) {
                 panelBottom = heightDp;
                 panelTop = Math.max(0f, heightDp - 125f);
-                rowY = heightDp - 94f;
+                rowY = heightDp - 64f;
                 float buttonWidth = vpnAvailable ? 210f : 260f;
-                fullscreen = Bounds.of(60f, rowY, buttonWidth, 48f);
-                pip = Bounds.of(68f + buttonWidth, rowY, buttonWidth, 48f);
-                vpn = vpnAvailable ? Bounds.of(76f + buttonWidth * 2f, rowY, buttonWidth, 48f) : null;
+                float right = widthDp - 32f;
+                float vpnX = right - (vpnAvailable ? buttonWidth : 0f);
+                float pipX = vpnAvailable ? vpnX - CONTROL_GAP_DP - buttonWidth : right - buttonWidth;
+                float fullscreenX = pipX - CONTROL_GAP_DP - buttonWidth;
+                fullscreen = Bounds.of(fullscreenX, rowY, buttonWidth, 48f);
+                pip = Bounds.of(pipX, rowY, buttonWidth, 48f);
+                vpn = vpnAvailable ? Bounds.of(vpnX, rowY, buttonWidth, 48f) : null;
                 up = down = null;
                 return;
             }
 
             panelBottom = Math.max(0f, heightDp - safeBottomDp);
             boolean portrait = heightDp >= widthDp;
-            float panelHeight = portrait ? 232f : 156f;
+            float panelHeight = portrait ? 232f : 112f;
             panelTop = Math.max(0f, panelBottom - panelHeight);
-            rowY = panelTop + (portrait ? 62f : 48f);
-            up = Bounds.of(COMPACT_MARGIN_DP, rowY - 25f, 42f, 34f);
-            down = Bounds.of(COMPACT_MARGIN_DP, rowY + 25f, 42f, 34f);
+            rowY = panelTop + (portrait ? 82f : 62f);
+            up = Bounds.of(COMPACT_MARGIN_DP, rowY - 17f, 42f, 34f);
+            down = Bounds.of(COMPACT_MARGIN_DP + 50f, rowY - 17f, 42f, 34f);
             if (portrait) {
                 int buttonCount = vpnAvailable ? 3 : 2;
                 float buttonWidth = (widthDp - 2f * COMPACT_MARGIN_DP
@@ -122,9 +126,10 @@ public final class TvLayoutMetrics {
                 float vpnX = right - vpnWidth;
                 float pipX = vpnAvailable ? vpnX - CONTROL_GAP_DP - pipWidth : right - pipWidth;
                 float fullscreenX = pipX - CONTROL_GAP_DP - fullscreenWidth;
-                fullscreen = Bounds.of(fullscreenX, rowY - 17f, fullscreenWidth, 34f);
-                pip = Bounds.of(pipX, rowY - 17f, pipWidth, 34f);
-                vpn = vpnAvailable ? Bounds.of(vpnX, rowY - 17f, vpnWidth, 34f) : null;
+                float actionY = rowY - 17f;
+                fullscreen = Bounds.of(fullscreenX, actionY, fullscreenWidth, 34f);
+                pip = Bounds.of(pipX, actionY, pipWidth, 34f);
+                vpn = vpnAvailable ? Bounds.of(vpnX, actionY, vpnWidth, 34f) : null;
             }
         }
 

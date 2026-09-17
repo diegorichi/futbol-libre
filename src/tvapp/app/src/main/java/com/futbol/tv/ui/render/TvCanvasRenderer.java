@@ -1,9 +1,9 @@
 package com.futbol.tv.ui.render;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Typeface;
 
 import com.futbol.tv.TvScreenView;
@@ -23,6 +23,7 @@ public final class TvCanvasRenderer {
     private final TvLayoutProfile layout;
     private final TvListBinder lists;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final TvSoccerBallRenderer soccerBall;
     private final float density;
     private float dragOffset;
     private float loadingRotation;
@@ -34,6 +35,7 @@ public final class TvCanvasRenderer {
         this.layout = layout;
         this.lists = lists;
         density = view.getResources().getDisplayMetrics().density;
+        soccerBall = new TvSoccerBallRenderer(density);
     }
 
     public void setDragOffset(float value) { dragOffset = value; }
@@ -95,12 +97,7 @@ public final class TvCanvasRenderer {
     public void drawLoading(Canvas canvas) {
         float cx = view.getWidth() / 2f;
         float cy = view.getHeight() / 2f;
-        paint.setTextSize(d(52));
-        canvas.save();
-        canvas.rotate(loadingRotation, cx, cy);
-        canvas.drawText("⚽", cx - paint.measureText("⚽") / 2f,
-                cy - (paint.ascent() + paint.descent()) / 2f, paint);
-        canvas.restore();
+        soccerBall.draw(canvas, cx / density, cy / density, 24f, loadingRotation);
     }
 
     public void drawUpdate(Canvas canvas) {
@@ -171,14 +168,63 @@ public final class TvCanvasRenderer {
         TvLayoutMetrics.PreviewLayout preview = TvLayoutMetrics.preview(widthDp(), heightDp(), safeBottomDp(), layout.compact(), host.vpnAvailable());
         paint.setColor(TvVisualTokens.withAlpha(220, TvVisualTokens.BACKGROUND));
         canvas.drawRect(0, d(preview.panelTop), view.getWidth(), d(preview.panelBottom), paint);
-        String position = host.events().isEmpty() ? "" : host.events().get(host.selectedEvent()).title;
-        text(canvas, fit(position, widthDp() - 48, 15), layout.compact() ? 24 : 60,
-                preview.panelTop + 26, 15, TvVisualTokens.ACCENT, true);
-        text(canvas, host.playerMessage(), layout.compact() ? 16 : 60,
-                preview.panelTop + 62, 18, Color.WHITE, true);
-        button(canvas, preview.fullscreen, "Pantalla completa", host.previewAction() == 0);
-        button(canvas, preview.pip, "Agregar segundo evento", host.previewAction() == 1);
+        Event event = selectedEvent();
+        String title = event == null ? "" : event.title;
+        String source = selectedSource(event);
+        if (layout.compact()) {
+            String[] titleParts = titleParts(title);
+            float titleX = 16f;
+            float titleMax = widthDp() - 32f;
+            text(canvas, fit(titleParts[0].isEmpty() ? titleParts[1] : titleParts[0], titleMax, 12),
+                    titleX, preview.panelTop + 22, 12, TvVisualTokens.ACCENT, true);
+            text(canvas, fit(titleParts[0].isEmpty() ? "" : titleParts[1], titleMax, 15),
+                    titleX, preview.panelTop + 43, 15, TvVisualTokens.ACCENT, true);
+            iconButton(canvas, preview.up, Icon.UP, false);
+            iconButton(canvas, preview.down, Icon.DOWN, false);
+            float sourceX = 116f;
+            float sourceMax = widthDp() - sourceX - 32f;
+            text(canvas, fit(source, sourceMax, 14), sourceX, preview.rowY + 6,
+                    14, Color.WHITE, true);
+            drawLoadingBall(canvas, source, sourceX, preview.rowY + 1, sourceMax);
+            iconButton(canvas, preview.fullscreen, Icon.FULLSCREEN, host.previewAction() == 0);
+            iconButton(canvas, preview.pip, Icon.PIP, host.previewAction() == 1);
+            if (preview.vpn != null) vpnButton(canvas, preview.vpn, host.vpnActive(), host.previewAction() == 2);
+            text(canvas, fit(host.playerMessage(), widthDp() - 32, 14), 16,
+                    preview.panelBottom - 24,
+                    14, Color.WHITE, true);
+            return;
+        }
+        text(canvas, fit(title, widthDp() - 120, 15), 60, preview.panelTop + 18,
+                15, TvVisualTokens.ACCENT, true);
+        text(canvas, fit(source, widthDp() - 120, 14), 60, preview.panelTop + 40,
+                14, Color.WHITE, true);
+        drawLoadingBall(canvas, source, 60, preview.panelTop + 35, widthDp() - 120);
+        text(canvas, fit(host.playerMessage(), widthDp() - 120, 16), 60,
+                preview.panelTop + 62, 16, Color.WHITE, true);
+        iconButton(canvas, preview.fullscreen, Icon.FULLSCREEN, host.previewAction() == 0);
+        iconButton(canvas, preview.pip, Icon.PIP, host.previewAction() == 1);
         if (preview.vpn != null) vpnButton(canvas, preview.vpn, host.vpnActive(), host.previewAction() == 2);
+    }
+
+    private void drawLoadingBall(Canvas c, String source, float x, float y, float maxWidth) {
+        if (!host.previewLoading()) return;
+        paint.setTextSize(d(14));
+        float textWidth = paint.measureText(fit(source, maxWidth, 14)) / density;
+        float cx = Math.min(widthDp() - 18f, x + textWidth + 16f);
+        float cy = y - 5f;
+        float radius = 9f;
+        soccerBall.draw(c, cx, cy, radius, loadingRotation);
+    }
+
+    private Event selectedEvent() {
+        int index = host.selectedEvent();
+        return index >= 0 && index < host.events().size() ? host.events().get(index) : null;
+    }
+
+    private String selectedSource(Event event) {
+        if (event == null) return "";
+        int index = host.selectedSource();
+        return index >= 0 && index < event.sources.size() ? event.sources.get(index).name : "";
     }
 
     private void drawCompactEvents(Canvas c, List<Event> events, boolean pip) {
@@ -243,17 +289,46 @@ public final class TvCanvasRenderer {
         text(c, "Fútbol TV", x, layout.headerSubtitleY(), layout.headerSubtitleSize(), TvVisualTokens.ACCENT, true);
     }
 
-    private void button(Canvas c, TvLayoutMetrics.Bounds bounds, String label, boolean selected) {
+    private void iconButton(Canvas c, TvLayoutMetrics.Bounds bounds, Icon icon, boolean selected) {
         if (bounds == null) return;
         paint.setColor(selected ? TvVisualTokens.SURFACE_SELECTED : TvVisualTokens.SURFACE);
         c.drawRoundRect(d(bounds.left), d(bounds.top), d(bounds.right), d(bounds.bottom), d(10), d(10), paint);
-        text(c, fit(label, bounds.right - bounds.left - 24, 15), bounds.left + 12, bounds.top + 30, 15, Color.WHITE, selected);
+        float cx = (bounds.left + bounds.right) / 2f;
+        float cy = (bounds.top + bounds.bottom) / 2f;
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(d(2));
+        paint.setStrokeCap(Paint.Cap.SQUARE);
+        Path path = new Path();
+        if (icon == Icon.FULLSCREEN) {
+            float l = cx - 8, r = cx + 8, t = cy - 8, b = cy + 8;
+            path.moveTo(d(l + 5), d(t)); path.lineTo(d(l), d(t)); path.lineTo(d(l), d(t + 5));
+            path.moveTo(d(r - 5), d(t)); path.lineTo(d(r), d(t)); path.lineTo(d(r), d(t + 5));
+            path.moveTo(d(l), d(b - 5)); path.lineTo(d(l), d(b)); path.lineTo(d(l + 5), d(b));
+            path.moveTo(d(r - 5), d(b)); path.lineTo(d(r), d(b)); path.lineTo(d(r), d(b - 5));
+        } else if (icon == Icon.PIP) {
+            path.addRect(d(cx - 10), d(cy - 7), d(cx + 10), d(cy + 7), Path.Direction.CW);
+            path.addRect(d(cx + 1), d(cy + 1), d(cx + 8), d(cy + 6), Path.Direction.CW);
+        } else {
+            path.moveTo(d(cx), d(cy + (icon == Icon.UP ? -7 : 7)));
+            path.lineTo(d(cx - 7), d(cy + (icon == Icon.UP ? 3 : -3)));
+            path.lineTo(d(cx + 7), d(cy + (icon == Icon.UP ? 3 : -3)));
+            path.close();
+        }
+        c.drawPath(path, paint);
+        paint.setStyle(Paint.Style.FILL);
     }
 
     private void vpnButton(Canvas c, TvLayoutMetrics.Bounds bounds, boolean active, boolean focused) {
         if (bounds == null) return;
-        button(c, bounds, "VPN", active || focused);
+        paint.setColor(active ? TvVisualTokens.DANGER : (focused ? TvVisualTokens.SURFACE_SELECTED : TvVisualTokens.SURFACE));
+        c.drawRoundRect(d(bounds.left), d(bounds.top), d(bounds.right), d(bounds.bottom), d(10), d(10), paint);
+        text(c, "VPN", bounds.left + 12, bounds.top + (bounds.bottom - bounds.top) * .68f,
+                Math.min(15f, bounds.bottom - bounds.top - 10f), active ? Color.rgb(255, 241, 242) : Color.WHITE,
+                active || focused);
     }
+
+    private enum Icon { UP, DOWN, FULLSCREEN, PIP }
 
     private void wrapped(Canvas c, String value, float x, float y, float size, int color, float maxWidth, int maxLines) {
         if (value == null || value.trim().isEmpty()) return;

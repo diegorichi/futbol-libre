@@ -5,6 +5,7 @@ import android.view.MotionEvent;
 
 import com.futbol.tv.TvScreenView;
 import com.futbol.tv.state.ScreenState;
+import com.futbol.tv.ui.layout.TvLayoutMetrics;
 import com.futbol.tv.ui.layout.TvLayoutProfile;
 import com.futbol.tv.ui.render.TvCanvasRenderer;
 
@@ -96,32 +97,8 @@ public final class TvScreenInputController {
     private int visibleRows() { return layout.visibleRows(widthDp(), heightDp()); }
 
     private int previewControlAt(float x, float y) {
-        boolean portrait = heightDp() >= widthDp();
-        float bottom = heightDp() - safeBottomDp();
-        float top = Math.max(0, bottom - (portrait ? 232f : 156f));
-        float rowY = top + (portrait ? 62 : 48);
-        float margin = 16, gap = 8;
-        if (x >= margin && x < margin + 42 && y >= rowY - 25 && y <= rowY + 9) return 0;
-        if (x >= margin && x < margin + 42 && y >= rowY + 25 && y <= rowY + 59) return 1;
-        if (portrait) {
-            int count = host.vpnAvailable() ? 3 : 2;
-            float width = (widthDp() - 2 * margin - gap * (count - 1)) / count;
-            float buttonY = top + 108;
-            if (x >= margin && x < margin + width && y >= buttonY && y <= buttonY + 34) return 2;
-            if (x >= margin + width + gap && x < margin + 2 * width + gap && y >= buttonY && y <= buttonY + 34) return 4;
-            if (host.vpnAvailable() && x >= margin + 2 * (width + gap) && y >= buttonY && y <= buttonY + 34) return 3;
-            return -1;
-        }
-        float right = widthDp() - margin;
-        float vpnWidth = host.vpnAvailable() ? 58 : 0;
-        float pipWidth = 54, fullscreenWidth = 50;
-        float vpnX = right - vpnWidth;
-        float pipX = host.vpnAvailable() ? vpnX - gap - pipWidth : right - pipWidth;
-        float fullscreenX = pipX - gap - fullscreenWidth;
-        if (x >= fullscreenX && x < fullscreenX + fullscreenWidth && y >= rowY - 17 && y <= rowY + 17) return 2;
-        if (x >= pipX && x < pipX + pipWidth && y >= rowY - 17 && y <= rowY + 17) return 4;
-        if (host.vpnAvailable() && x >= vpnX && x < vpnX + vpnWidth && y >= rowY - 17 && y <= rowY + 17) return 3;
-        return -1;
+        return TvLayoutMetrics.preview(widthDp(), heightDp(), safeBottomDp(), layout.compact(), host.vpnAvailable())
+                .controlAt(x, y);
     }
 
     private int offsetRows(ScreenState state) {

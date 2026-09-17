@@ -262,6 +262,7 @@ public class MainActivity extends Activity implements TvScreenView.Host, TvInput
     @Override public int previewAction() { return previewAction; }
     @Override public boolean vpnAvailable() { return streaming.vpnEnabled && streaming.vpnAvailable; }
     @Override public boolean vpnActive() { return playback.vpnActive(); }
+    @Override public boolean previewLoading() { return playback.previewLoading(); }
     @Override public String playerMessage() { return playback.playerMessage(); }
     @Override public String updateVersion() { return pendingUpdate == null ? "" : pendingUpdate.versionName; }
     @Override public String updateStatus() { return updateStatus; }

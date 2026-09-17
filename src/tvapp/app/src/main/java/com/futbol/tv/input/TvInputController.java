@@ -131,15 +131,22 @@ public final class TvInputController {
         } else {
             int event = pip ? host.pipEvent() : host.selectedEvent(); int size = host.events().get(event).sources.size();
             int selected = pip ? host.pipSource() : host.selectedSource(); selected = NavigationState.clamp(selected + direction, size);
-            Source source = host.events().get(event).sources.get(selected);
             if (pip) { host.setPipSource(selected); host.setPipSourceOffset(offset(selected, size)); }
-            else { host.setSelectedSource(selected); host.setSourceOffset(offset(selected, size)); host.preview(source); }
+            else { host.setSelectedSource(selected); host.setSourceOffset(offset(selected, size)); }
         }
         host.invalidate();
     }
 
     private void confirmList(boolean pip) {
-        int event = pip ? host.pipEvent() : host.selectedEvent(); if (host.events().isEmpty() || event >= host.events().size()) return;
+        if (host.events().isEmpty()) return;
+        ScreenState state = host.state();
+        int event = pip ? host.pipEvent() : host.selectedEvent();
+        if (event < 0 || event >= host.events().size()) return;
+        if (state.eventListVisible()) {
+            if (pip) host.showPipSources();
+            else host.showSources();
+            return;
+        }
         List<Source> sources = host.events().get(event).sources; int selected = pip ? host.pipSource() : host.selectedSource();
         if (sources.isEmpty() || selected >= sources.size()) return;
         if (pip) host.startPip(sources.get(selected)); else host.preview(sources.get(selected)); host.invalidate();
@@ -149,6 +156,10 @@ public final class TvInputController {
         public void tap(float x, float y) { }
         public int scroll(float deltaY) { return 0; }
         public void dpad(int key) {
+            if (key == KeyEvent.KEYCODE_DPAD_UP || key == KeyEvent.KEYCODE_DPAD_DOWN) {
+                dpadPreviewSource(key == KeyEvent.KEYCODE_DPAD_UP ? -1 : 1);
+                return;
+            }
             if (key != KeyEvent.KEYCODE_DPAD_LEFT && key != KeyEvent.KEYCODE_DPAD_RIGHT) return;
             int count = host.vpnAvailable() ? 3 : 2; int direction = key == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1;
             host.setPreviewAction(Math.max(0, Math.min(count - 1, host.previewAction() + direction))); host.invalidate();
@@ -158,6 +169,19 @@ public final class TvInputController {
             else { host.goTo(ScreenStates.PLAYER_STATE); host.enterFullscreen(); } host.invalidate();
         }
     }; }
+
+    private void dpadPreviewSource(int direction) {
+        if (host.events().isEmpty()) return;
+        int eventIndex = host.selectedEvent();
+        if (eventIndex < 0 || eventIndex >= host.events().size()) return;
+        List<Source> sources = host.events().get(eventIndex).sources;
+        if (sources.isEmpty()) return;
+        int selected = NavigationState.clamp(host.selectedSource() + direction, sources.size());
+        host.setSelectedSource(selected);
+        host.setSourceOffset(offset(selected, sources.size()));
+        host.preview(sources.get(selected));
+        host.invalidate();
+    }
 
     private StateInput playbackState() { return new StateInput() {
         public void tap(float x, float y) { } public int scroll(float deltaY) { return 0; }

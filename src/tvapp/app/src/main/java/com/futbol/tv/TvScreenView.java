@@ -25,7 +25,7 @@ public final class TvScreenView extends FrameLayout {
         List<Event> events();
         int selectedEvent(); int eventOffset(); int selectedSource(); int sourceOffset();
         int pipEvent(); int pipEventOffset(); int pipSource(); int pipSourceOffset();
-        int previewAction(); boolean vpnAvailable(); boolean vpnActive(); String playerMessage();
+        int previewAction(); boolean vpnAvailable(); boolean vpnActive(); boolean previewLoading(); String playerMessage();
         String updateVersion(); String updateStatus();
         void onBack(); void onDpad(int keyCode); void onConfirm(); void onTouch(float x, float y); void onSwipe(boolean down); int onScroll(float deltaY);
         void onEventTap(int index, boolean forPip); void onSourceTap(int index, boolean forPip); void onPlaybackControl(int control);
@@ -38,10 +38,11 @@ public final class TvScreenView extends FrameLayout {
     private final TvCanvasStateRenderer stateRenderer;
     private final TvScreenInputController input;
     private ScreenState lastState;
+    private boolean lastPreviewLoading;
     private float ballRotation;
     private final Runnable ballAnimation = new Runnable() {
         @Override public void run() {
-            if (!host.state().isSearching()) return;
+            if (!host.state().isSearching() && !host.previewLoading()) return;
             ballRotation = (ballRotation + 8f) % 360f;
             invalidate();
             postDelayed(this, 45);
@@ -75,11 +76,13 @@ public final class TvScreenView extends FrameLayout {
     @Override protected void onDraw(Canvas canvas) {
         ScreenState state = host.state();
         lists.sync(state, getHeight(), getResources().getDisplayMetrics().density, layout.compact(), host);
-        if (state != lastState) {
+        boolean previewLoading = host.previewLoading();
+        if (state != lastState || previewLoading != lastPreviewLoading) {
             lastState = state;
             removeCallbacks(ballAnimation);
-            if (state.isSearching()) post(ballAnimation);
+            if (state.isSearching() || previewLoading) post(ballAnimation);
         }
+        lastPreviewLoading = previewLoading;
         this.canvas.setLoadingRotation(ballRotation);
         stateRenderer.render(canvas, state);
     }
@@ -87,7 +90,7 @@ public final class TvScreenView extends FrameLayout {
     @Override protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         removeCallbacks(ballAnimation);
-        if (host.state().isSearching()) post(ballAnimation);
+        if (host.state().isSearching() || host.previewLoading()) post(ballAnimation);
     }
 
     @Override protected void onDetachedFromWindow() {

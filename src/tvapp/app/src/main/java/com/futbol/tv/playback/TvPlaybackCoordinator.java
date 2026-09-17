@@ -22,6 +22,7 @@ public final class TvPlaybackCoordinator {
     private final PlaybackController playback;
     private boolean vpnPlayback;
     private boolean vpnConnecting;
+    private boolean previewLoading;
     private String vpnProxyUrl;
     private String playerMessage = "";
 
@@ -31,6 +32,7 @@ public final class TvPlaybackCoordinator {
         this.catalog = catalog;
         this.listener = listener;
         this.playback = new PlaybackController(context, primary, pip, message -> {
+            if (message == null || message.isEmpty()) previewLoading = false;
             playerMessage = message;
             main.post(listener::onChanged);
         });
@@ -38,6 +40,7 @@ public final class TvPlaybackCoordinator {
 
     public void preview(Source source) {
         resetRoute();
+        previewLoading = true;
         playerMessage = "Cargando preview...";
         playback.preview(source);
     }
@@ -45,11 +48,13 @@ public final class TvPlaybackCoordinator {
     public void toggleVpnPreview(String baseUrl, Event event, Source source) {
         if (vpnPlayback || vpnConnecting) {
             resetRoute();
+            previewLoading = true;
             playerMessage = "Cargando preview...";
             playback.preview(source);
             notifyChanged();
             return;
         }
+        previewLoading = true;
         playerMessage = "Obteniendo URL por VPN...";
         vpnConnecting = true;
         playback.releaseAll();
@@ -76,6 +81,7 @@ public final class TvPlaybackCoordinator {
                     Source vpnSource = new Source(source.id, source.name, url, source.userAgent, source.pageUrl);
                     vpnPlayback = true;
                     vpnConnecting = false;
+                    previewLoading = true;
                     vpnProxyUrl = proxyUrl;
                     playerMessage = preview ? "Cargando por VPN..." : playerMessage;
                     if (preview) playback.preview(vpnSource, true, proxyUrl);
@@ -100,14 +106,15 @@ public final class TvPlaybackCoordinator {
     public void enterFullscreen() { playback.enterFullscreen(); }
     public void showPreview() { playback.showPreview(); }
     public void stopPrimary() { playback.stopPrimary(); }
-    public void releaseAll() { playback.releaseAll(); }
-    public void switchPrimary(Source source) { resetRoute(); playback.switchPrimary(source); }
+    public void releaseAll() { previewLoading = false; playback.releaseAll(); }
+    public void switchPrimary(Source source) { resetRoute(); previewLoading = false; playback.switchPrimary(source); }
     public void pauseAll() { playback.pauseAll(); }
     public void resumeAll() { playback.resumeAll(); }
     public void onConfigurationChanged() { playback.onConfigurationChanged(); }
 
     public boolean vpnActive() { return vpnPlayback; }
     public boolean vpnConnecting() { return vpnConnecting; }
+    public boolean previewLoading() { return previewLoading; }
     public String playerMessage() { return playerMessage; }
 
     private void resetRoute() {
