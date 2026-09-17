@@ -196,7 +196,7 @@ public final class TvCanvasRenderer {
             iconButton(canvas, preview.pip, Icon.PIP, host.previewAction() == 1);
             if (preview.vpn != null) vpnButton(canvas, preview.vpn, host.vpnActive(), host.previewAction() == 2);
             text(canvas, fit(host.playerMessage(), widthDp() - 32, 14), 16,
-                    preview.panelBottom - 24,
+                    preview.panelBottom - (landscape ? 12 : 24),
                     14, Color.WHITE, true);
             return;
         }
