@@ -1,5 +1,7 @@
 package com.futbol.tv;
 
+import com.futbol.tv.ui.layout.TvVisualTokens;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -22,7 +24,7 @@ public final class SourceRowView extends View {
     @Override protected void onDraw(Canvas c) {
         if (source == null) return;
         float width = getWidth() / density;
-        paint.setColor(selected ? Color.rgb(25,57,77) : Color.TRANSPARENT);
+        paint.setColor(selected ? TvVisualTokens.SURFACE : Color.TRANSPARENT);
         c.drawRoundRect(new RectF(dp(0), dp(1), getWidth(), getHeight() - dp(1)), dp(10), dp(10), paint);
         paint.setColor(Color.WHITE); paint.setTextSize(dp(18)); paint.setTypeface(selected ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
         String name = source.name;

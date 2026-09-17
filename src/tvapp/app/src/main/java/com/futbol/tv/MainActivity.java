@@ -1,10 +1,6 @@
 package com.futbol.tv;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.nsd.NsdManager;
-import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
 import android.os.Build;
 import android.os.Handler;
@@ -16,44 +12,38 @@ import android.widget.Toast;
 
 import androidx.media3.ui.PlayerView;
 
-import org.json.JSONObject;
-
 import com.futbol.tv.model.Event;
 import com.futbol.tv.model.Source;
+import com.futbol.tv.state.ScreenState;
+import com.futbol.tv.state.ScreenStates;
+import com.futbol.tv.state.TvNavigationController;
+import com.futbol.tv.ui.layout.TvLayoutProfile;
+import com.futbol.tv.input.TvInputController;
+import com.futbol.tv.catalog.TvCatalogController;
+import com.futbol.tv.catalog.TvCatalogControllerListener;
+import com.futbol.tv.discovery.ServerDiscoveryController;
+import com.futbol.tv.playback.TvPlaybackCoordinator;
 
-import java.io.InputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /** Minimal remote-first TV UI: events -> sources -> preview -> fullscreen. */
-public class MainActivity extends Activity implements TvScreenView.Host {
-    private static final String SERVICE_TYPE = "_futbol._tcp.";
-    private static final int UDP_DISCOVERY_PORT = 45678;
-    private final ExecutorService network = Executors.newSingleThreadExecutor();
-    private final ServerClient serverClient = new ServerClient();
+@androidx.media3.common.util.UnstableApi
+public class MainActivity extends Activity implements TvScreenView.Host, TvInputController.Host, TvCatalogControllerListener.Host, ScreenState.BackHandler {
     private final Handler main = new Handler();
     private FrameLayout root;
     private TvScreenView screen;
     private PlayerView playerView;
     private PlayerView pipView;
-    private PlaybackController playback;
-    private AppUpdateManager updateManager;
+    private TvPlaybackCoordinator playback;
+    private TvCatalogController catalog;
     private AppUpdateManager.Release pendingUpdate;
     private String updateStatus = "Descarga e instalación con confirmación de Android";
-    private boolean updateChecked;
-    private NsdManager nsd;
-    private NsdManager.DiscoveryListener discovery;
+    private ServerDiscoveryController discovery;
     private String serverBase;
     private final List<Event> events = new ArrayList<>();
-    private int state = TvScreenView.SEARCHING;
+    private final TvNavigationController navigation = new TvNavigationController();
+    private TvInputController input;
     private int selectedEvent = 0;
     private int eventOffset = 0;
     private int selectedSource = 0;
@@ -64,23 +54,12 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     private int pipSourceOffset = 0;
     private int previewAction = 0;
     private StreamingCapabilities streaming = StreamingCapabilities.disabled();
-    private boolean vpnPlayback;
-    private boolean vpnConnecting;
-    private String vpnProxyUrl;
     private boolean resumePlaybackOnStart;
-    private final Map<String, Bitmap> logos = new HashMap<>();
-    private String playerMessage = "";
-    private final Runnable discoveryTimeout = () -> {
-        if (serverBase == null && state == TvScreenView.SEARCHING) {
-            if (isEmulator()) connect("http://10.0.2.2:8080");
-            else discoverByBroadcast();
-        }
-    };
     private final Runnable refreshTask = new Runnable() {
         @Override public void run() {
             // Nunca cambiar la pantalla mientras se reproduce un stream. El
             // refresco del catálogo queda limitado a la pantalla de eventos.
-            if (serverBase != null && state == TvScreenView.EVENTS) loadEvents(false);
+            if (serverBase != null && navigation.current() == ScreenStates.EVENTS_STATE) loadEvents(false);
             main.postDelayed(this, 60000);
         }
     };
@@ -96,19 +75,26 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         pipView.setUseController(false);
         pipView.setVisibility(View.GONE);
         pipView.setOnTouchListener((view, event) -> {
-            if (state != TvScreenView.DUAL || !screen.isCompactLayout()) return false;
+            if (navigation.current() != ScreenStates.DUAL_STATE || !screen.isCompactLayout()) return false;
             if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
                 promotePipToPrimary();
             }
             return true;
         });
         root.addView(pipView, new FrameLayout.LayoutParams(-1, -1));
-        playback = new PlaybackController(this, playerView, pipView, message -> {
-            playerMessage = message;
-            main.post(() -> screen.invalidate());
+        catalog = new TvCatalogController(this, main, new TvCatalogControllerListener(this));
+        playback = new TvPlaybackCoordinator(this, playerView, pipView, catalog, main,
+                () -> screen.invalidate());
+        discovery = new ServerDiscoveryController(this, main, new ServerDiscoveryController.Listener() {
+            @Override public void onServerFound(String baseUrl) { connect(baseUrl); }
+
+            @Override public void onDiscoveryError(Exception error) {
+                navigation.goTo(ScreenStates.ERROR_STATE);
+                screen.invalidate();
+            }
         });
-        updateManager = new AppUpdateManager(this);
         screen = new TvScreenView(this, this);
+        input = new TvInputController(this);
         root.addView(screen, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
 
@@ -123,234 +109,80 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         }
     }
 
-    private void discoverServer() {
+    @Override public void discoverServer() {
         serverBase = null;
-        state = TvScreenView.SEARCHING;
+        navigation.goTo(ScreenStates.SEARCHING_STATE);
         screen.invalidate();
-        main.removeCallbacks(discoveryTimeout);
-        main.postDelayed(discoveryTimeout, 6000);
-        nsd = (NsdManager) getSystemService(NSD_SERVICE);
-        discovery = new NsdManager.DiscoveryListener() {
-            @Override public void onDiscoveryStarted(String serviceType) { }
-            @Override public void onServiceFound(NsdServiceInfo info) {
-                if (!SERVICE_TYPE.equals(info.getServiceType())) return;
-                nsd.resolveService(info, new NsdManager.ResolveListener() {
-                    @Override public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) { }
-                    @Override public void onServiceResolved(NsdServiceInfo serviceInfo) {
-                        if (serverBase == null && serviceInfo.getHost() != null) {
-                            connect("http://" + serviceInfo.getHost().getHostAddress() + ":" + serviceInfo.getPort());
-                        }
-                    }
-                });
-            }
-            @Override public void onServiceLost(NsdServiceInfo serviceInfo) { }
-            @Override public void onDiscoveryStopped(String serviceType) { }
-            @Override public void onStartDiscoveryFailed(String serviceType, int errorCode) { stopDiscovery(); }
-            @Override public void onStopDiscoveryFailed(String serviceType, int errorCode) { }
-        };
-        nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discovery);
+        discovery.start(isEmulator());
     }
 
     private boolean isEmulator() {
         return Build.FINGERPRINT.startsWith("generic") || Build.MODEL.contains("Emulator") || Build.MODEL.contains("Android SDK");
     }
 
-    private void discoverByBroadcast() {
-        network.execute(() -> {
-            try (DatagramSocket socket = new DatagramSocket()) {
-                socket.setBroadcast(true);
-                byte[] request = "FUTBOL_DISCOVER_V1".getBytes();
-                socket.send(new DatagramPacket(request, request.length,
-                        InetAddress.getByName("255.255.255.255"), UDP_DISCOVERY_PORT));
-                socket.setSoTimeout(2500);
-                byte[] buffer = new byte[512];
-                DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-                socket.receive(response);
-                JSONObject payload = new JSONObject(new String(response.getData(), 0, response.getLength()));
-                String base = "http://" + response.getAddress().getHostAddress() + ":" + payload.optInt("port", 8080);
-                main.post(() -> connect(base));
-            } catch (Exception error) {
-                main.post(() -> { state = TvScreenView.ERROR; screen.invalidate(); });
-            }
-        });
-    }
-
     private void connect(String base) {
         serverBase = base.replaceAll("/$", "");
-        main.removeCallbacks(discoveryTimeout);
-        stopDiscovery();
+        discovery.stop();
         main.removeCallbacks(refreshTask);
         main.postDelayed(refreshTask, 60000);
         loadEvents(true);
     }
 
     private void loadEvents(boolean showLoading) {
-        final int requestedFromState = state;
         if (showLoading) {
-            state = TvScreenView.SEARCHING;
+            navigation.goTo(ScreenStates.SEARCHING_STATE);
             screen.invalidate();
         }
-        serverClient.loadEvents(serverBase, new ServerClient.EventsCallback() {
-            @Override public void onSuccess(List<Event> loaded, StreamingCapabilities capabilities) {
-                main.post(() -> {
-                    // Una respuesta vieja no puede devolvernos al menú si el
-                    // usuario ya empezó a reproducir un evento.
-                    if (!showLoading && state != TvScreenView.EVENTS) return;
-                    events.clear();
-                    events.addAll(loaded);
-                    streaming = capabilities == null ? StreamingCapabilities.disabled() : capabilities;
-                    if (showLoading) state = TvScreenView.EVENTS;
-                    selectedEvent = NavigationState.clamp(selectedEvent, events.size());
-                    eventOffset = NavigationState.offsetFor(selectedEvent, events.size(), screen.visibleRows(), listFocusPosition());
-                    screen.invalidate();
-                    for (Event event : loaded) loadLogo(event);
-                    checkForUpdate();
-                });
-            }
-
-            @Override public void onError(Exception error) {
-                main.post(() -> {
-                    if (!showLoading && (state != TvScreenView.EVENTS || requestedFromState != TvScreenView.EVENTS)) return;
-                    state = TvScreenView.ERROR;
-                    screen.invalidate();
-                    Toast.makeText(MainActivity.this, "No se pudo cargar el servidor", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
+        catalog.loadEvents(serverBase, showLoading);
     }
 
-    private void checkForUpdate() {
-        if (updateChecked || serverBase == null || updateManager == null) return;
-        updateChecked = true;
-        updateManager.check(serverBase, BuildConfig.APP_VERSION_CODE, new AppUpdateManager.CheckCallback() {
-            @Override public void onUpToDate() { }
-
-            @Override public void onUpdateAvailable(AppUpdateManager.Release release) {
-                main.post(() -> {
-                    if (state != TvScreenView.EVENTS) return;
-                    pendingUpdate = release;
-                    updateStatus = release.changelog.isEmpty() ? "Hay una nueva versión disponible" : release.changelog;
-                    state = TvScreenView.UPDATE;
-                    screen.invalidate();
-                });
-            }
-
-            @Override public void onError(Exception error) { }
-        });
-    }
-
-    private void installPendingUpdate() {
-        if (pendingUpdate == null) { state = TvScreenView.EVENTS; screen.invalidate(); return; }
+    @Override public void installPendingUpdate() {
+        if (pendingUpdate == null) { navigation.goTo(ScreenStates.EVENTS_STATE); screen.invalidate(); return; }
         updateStatus = "Descargando actualización...";
         screen.invalidate();
-        updateManager.downloadAndInstall(pendingUpdate, new AppUpdateManager.InstallCallback() {
-            @Override public void onStarted() {
-                main.post(() -> { pendingUpdate = null; state = TvScreenView.EVENTS; screen.invalidate(); });
-            }
-
-            @Override public void onError(Exception error) {
-                main.post(() -> {
-                    pendingUpdate = null;
-                    state = TvScreenView.EVENTS;
-                    Toast.makeText(MainActivity.this, "No se pudo actualizar la app", Toast.LENGTH_SHORT).show();
-                    screen.invalidate();
-                });
-            }
-        });
+        catalog.installUpdate(pendingUpdate);
     }
 
-    private void loadLogo(Event event) {
-        if (event.logo.isEmpty() || logos.containsKey(event.logo)) return;
-        network.execute(() -> {
-            try (InputStream input = new URL(event.logo).openStream()) {
-                Bitmap bitmap = BitmapFactory.decodeStream(input);
-                if (bitmap != null) {
-                    logos.put(event.logo, bitmap);
-                    main.post(() -> screen.invalidate());
-                }
-            } catch (Exception ignored) { }
-        });
-    }
-
-    private void preview(Source source) {
-        state = TvScreenView.PREVIEW;
+    @Override public void preview(Source source) {
+        navigation.goTo(ScreenStates.PREVIEW_STATE);
         previewAction = 0;
-        vpnPlayback = false;
-        vpnConnecting = false;
-        vpnProxyUrl = null;
-        playerMessage = "Cargando preview...";
         playback.preview(source);
         screen.invalidate();
     }
 
-    private void toggleVpnPreview() {
+    @Override public void toggleVpnPreview() {
         if (!vpnAvailable() || events.isEmpty()) return;
         Event event = events.get(selectedEvent);
         Source source = event.sources.get(selectedSource);
-        if (vpnPlayback || vpnConnecting) {
-            vpnPlayback = false;
-            vpnConnecting = false;
-            vpnProxyUrl = null;
-            playerMessage = "Cargando preview...";
-            playback.preview(source);
-            screen.invalidate();
-            return;
-        }
-        playerMessage = "Obteniendo URL por VPN...";
-        vpnConnecting = true;
-        playback.releaseAll();
-        screen.invalidate();
-        serverClient.requestVpnStreamUrl(serverBase, event.id, source.id, new ServerClient.StreamUrlCallback() {
-            @Override public void onSuccess(String url, String proxyUrl) {
-                main.post(() -> {
-                    Source vpnSource = new Source(source.id, source.name, url, source.userAgent, source.pageUrl);
-                    vpnPlayback = true;
-                    vpnConnecting = false;
-                    vpnProxyUrl = proxyUrl;
-                    playerMessage = "Cargando por VPN...";
-                    playback.preview(vpnSource, true, proxyUrl);
-                    screen.invalidate();
-                });
-            }
-
-            @Override public void onError(Exception error) {
-                main.post(() -> {
-                    vpnPlayback = false;
-                    vpnConnecting = false;
-                    vpnProxyUrl = null;
-                    playerMessage = "No se pudo preparar la reproducción por VPN";
-                    screen.invalidate();
-                });
-            }
-        });
+        playback.toggleVpnPreview(serverBase, event, source);
     }
 
-    private void openPipEventPicker() {
+    @Override public void openPipEventPicker() {
         if (events.size() < 2) {
             Toast.makeText(this, "No hay un segundo evento disponible", Toast.LENGTH_SHORT).show();
             return;
         }
         pipEvent = pipEvent == selectedEvent ? (selectedEvent + 1) % events.size() : pipEvent;
         pipEventOffset = NavigationState.offsetFor(pipEvent, events.size(), screen.visibleRows(), listFocusPosition());
-        state = TvScreenView.PIP_EVENTS;
+        navigation.goTo(ScreenStates.PIP_EVENTS_STATE);
         screen.invalidate();
     }
 
-    private void showPipSources() {
+    @Override public void showPipSources() {
         if (events.get(pipEvent).sources.isEmpty()) return;
         pipSource = 0;
         pipSourceOffset = 0;
-        state = TvScreenView.PIP_SOURCES;
+        navigation.goTo(ScreenStates.PIP_SOURCES_STATE);
         screen.invalidate();
     }
 
-    private void startPip(Source source) {
+    @Override public void startPip(Source source) {
         playback.startPip(source);
-        state = TvScreenView.DUAL;
+        navigation.goTo(ScreenStates.DUAL_STATE);
         screen.invalidate();
     }
 
-    private void promotePipToPrimary() {
+    @Override public void promotePipToPrimary() {
         if (!playback.swap()) {
             Toast.makeText(this, "Esperá a que PiP termine de cargar", Toast.LENGTH_SHORT).show();
             return;
@@ -359,88 +191,25 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         int source = selectedSource; selectedSource = pipSource; pipSource = source;
     }
 
-    private void stopDiscovery() {
-        if (nsd != null && discovery != null) {
-            try { nsd.stopServiceDiscovery(discovery); } catch (Exception ignored) { }
-            discovery = null;
-        }
-    }
-
-    private void showSources() {
+    @Override public void showSources() {
         if (events.isEmpty()) return;
         selectedSource = 0;
         sourceOffset = 0;
         playback.releaseAll();
-        state = TvScreenView.SOURCES;
+        navigation.goTo(ScreenStates.SOURCES_STATE);
         screen.invalidate();
     }
 
-    private void back() {
-        if (state == TvScreenView.DUAL) {
-            playback.closePip();
-            state = TvScreenView.PLAYER;
-        } else if (state == TvScreenView.PLAYER) {
-            state = TvScreenView.PREVIEW;
-            playback.showPreview();
-        } else if (state == TvScreenView.PREVIEW) {
-            state = TvScreenView.SOURCES;
-            playback.stopPrimary();
-            playback.releaseAll();
-        } else if (state == TvScreenView.PIP_SOURCES) {
-            state = TvScreenView.PIP_EVENTS;
-        } else if (state == TvScreenView.PIP_EVENTS) {
-            state = TvScreenView.PREVIEW;
-        } else if (state == TvScreenView.SOURCES) {
-            state = TvScreenView.EVENTS;
-        } else if (state == TvScreenView.UPDATE) {
-            pendingUpdate = null;
-            state = TvScreenView.EVENTS;
-        } else if (state == TvScreenView.EVENTS || state == TvScreenView.ERROR) {
-            finish();
-            return;
-        }
-        screen.invalidate();
-    }
+    private void back() { navigation.back(this); }
 
-    private void tap(float x, float y) {
-        if (state == TvScreenView.ERROR) {
-            discoverServer();
-        } else if (state == TvScreenView.UPDATE) {
-            installPendingUpdate();
-        } else if (state == TvScreenView.EVENTS && !events.isEmpty()) {
-            int item = eventOffset + (int) ((y - (screen.isCompactLayout() ? screen.compactEventListTopDp() - 44 : 101) - screen.dragOffsetDp()) / (screen.isCompactLayout() ? screen.compactEventRowDp() : 72));
-            if (item >= 0 && item < events.size()) { selectedEvent = item; showSources(); }
-        } else if (state == TvScreenView.SOURCES && !events.isEmpty()) {
-            int item = sourceOffset + (int) ((y - 145 - screen.dragOffsetDp()) / 48);
-            if (item >= 0 && item < events.get(selectedEvent).sources.size()) { selectedSource = item; preview(events.get(selectedEvent).sources.get(item)); }
-        } else if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
-            int item = pipEventOffset + (int) ((y - (screen.isCompactLayout() ? screen.compactEventListTopDp() - 44 : 115) - screen.dragOffsetDp()) / (screen.isCompactLayout() ? screen.compactEventRowDp() : 52));
-            if (item >= 0 && item < events.size()) { pipEvent = item; showPipSources(); }
-        } else if (state == TvScreenView.PIP_SOURCES && !events.isEmpty() && !events.get(pipEvent).sources.isEmpty()) {
-            int item = pipSourceOffset + (int) ((y - 145 - screen.dragOffsetDp()) / 48);
-            if (item >= 0 && item < events.get(pipEvent).sources.size()) { pipSource = item; startPip(events.get(pipEvent).sources.get(item)); }
-        } else if (state == TvScreenView.PREVIEW) {
-            // La acción de la derecha del panel inferior agrega PiP; el resto
-            // abre el reproductor principal, igual que OK en el control remoto.
-            float height = screen.getHeight() / screen.getResources().getDisplayMetrics().density;
-            float width = screen.getWidth() / screen.getResources().getDisplayMetrics().density;
-            float half = width / 2f;
-            boolean actionArea = screen.isCompactLayout()
-                    ? y >= height - 132f && y <= height - 68f
-                    : y >= height - 96f;
-            if (!actionArea) return;
-            int action = vpnAvailable() ? (x < width / 3f ? 0 : x < width * 2f / 3f ? 1 : 2) : (x >= half ? 1 : 0);
-            if (action == 1) {
-                openPipEventPicker();
-            } else if (action == 2) {
-                toggleVpnPreview();
-            } else {
-                state = TvScreenView.PLAYER;
-                playback.enterFullscreen();
-            }
-            screen.invalidate();
-        }
-    }
+    @Override public void exit() { finish(); }
+    @Override public void closePip() { playback.closePip(); }
+    @Override public void showPreview() { playback.showPreview(); }
+    @Override public void stopPrimary() { playback.stopPrimary(); }
+    @Override public void releasePlayback() { playback.releaseAll(); }
+    @Override public void clearPendingUpdate() { pendingUpdate = null; }
+    @Override public void navigate(ScreenState target) { navigation.goTo(target); }
+    @Override public void invalidate() { screen.invalidate(); }
 
     private int listFocusPosition() { return Math.max(0, screen.visibleRows() - 3); }
 
@@ -451,7 +220,36 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         pipSourceOffset = events.isEmpty() ? 0 : NavigationState.offsetFor(pipSource, events.get(pipEvent).sources.size(), screen.visibleRows(), listFocusPosition());
     }
 
-    @Override public int state() { return state; }
+    @Override public void replaceEvents(List<Event> loaded, StreamingCapabilities capabilities, boolean initialLoad) {
+        events.clear();
+        events.addAll(loaded);
+        streaming = capabilities == null ? StreamingCapabilities.disabled() : capabilities;
+        selectedEvent = NavigationState.clamp(selectedEvent, events.size());
+        eventOffset = NavigationState.offsetFor(selectedEvent, events.size(), screen.visibleRows(), listFocusPosition());
+    }
+    @Override public void setPendingUpdate(AppUpdateManager.Release release) { pendingUpdate = release; }
+    @Override public void setUpdateStatus(String status) { updateStatus = status; }
+    @Override public void checkForUpdate() { catalog.checkForUpdate(serverBase, BuildConfig.APP_VERSION_CODE); }
+    @Override public void showToast(String message) { Toast.makeText(this, message, Toast.LENGTH_SHORT).show(); }
+
+    @Override public ScreenState state() { return navigation.current(); }
+    @Override public void setSelectedEvent(int value) { selectedEvent = value; }
+    @Override public void setEventOffset(int value) { eventOffset = value; }
+    @Override public void setSelectedSource(int value) { selectedSource = value; }
+    @Override public void setSourceOffset(int value) { sourceOffset = value; }
+    @Override public void setPipEvent(int value) { pipEvent = value; }
+    @Override public void setPipEventOffset(int value) { pipEventOffset = value; }
+    @Override public void setPipSource(int value) { pipSource = value; }
+    @Override public void setPipSourceOffset(int value) { pipSourceOffset = value; }
+    @Override public void setPreviewAction(int value) { previewAction = value; }
+    @Override public TvLayoutProfile layout() { return screen.layoutProfile(); }
+    @Override public int visibleRows() { return screen.visibleRows(); }
+    @Override public float dragOffsetDp() { return screen.dragOffsetDp(); }
+    @Override public float widthDp() { return screen.getWidth() / screen.getResources().getDisplayMetrics().density; }
+    @Override public float heightDp() { return screen.getHeight() / screen.getResources().getDisplayMetrics().density; }
+    @Override public void goTo(ScreenState nextState) { navigation.goTo(nextState); }
+    @Override public void switchPrimary(Source source) { playback.switchPrimary(source); }
+    @Override public void enterFullscreen() { playback.enterFullscreen(); }
     @Override public List<Event> events() { return events; }
     @Override public int selectedEvent() { return selectedEvent; }
     @Override public int eventOffset() { return eventOffset; }
@@ -463,19 +261,12 @@ public class MainActivity extends Activity implements TvScreenView.Host {
     @Override public int pipSourceOffset() { return pipSourceOffset; }
     @Override public int previewAction() { return previewAction; }
     @Override public boolean vpnAvailable() { return streaming.vpnEnabled && streaming.vpnAvailable; }
-    @Override public boolean vpnActive() { return vpnPlayback; }
-    @Override public String playerMessage() { return playerMessage; }
-    @Override public Bitmap logo(String url) { return logos.get(url); }
-    @Override public String playbackLabel() {
-        if (events.isEmpty() || selectedEvent >= events.size()) return "";
-        Event event = events.get(selectedEvent);
-        if (selectedSource >= event.sources.size()) return "";
-        return event.sources.get(selectedSource).name;
-    }
+    @Override public boolean vpnActive() { return playback.vpnActive(); }
+    @Override public String playerMessage() { return playback.playerMessage(); }
     @Override public String updateVersion() { return pendingUpdate == null ? "" : pendingUpdate.versionName; }
     @Override public String updateStatus() { return updateStatus; }
     @Override public void onBack() { back(); }
-    @Override public void onTouch(float x, float y) { tap(x, y); }
+    @Override public void onTouch(float x, float y) { input.tap(x, y); }
     @Override public void onEventTap(int index, boolean forPip) {
         if (index < 0 || index >= events.size()) return;
         if (forPip) {
@@ -499,153 +290,43 @@ public class MainActivity extends Activity implements TvScreenView.Host {
         }
     }
     @Override public void onSwipe(boolean down) {
-        onDpad(down ? KeyEvent.KEYCODE_DPAD_DOWN : KeyEvent.KEYCODE_DPAD_UP);
+        input.onSwipe(down);
     }
 
     @Override public void onPlaybackControl(int control) {
-        if (control == 0) onDpad(KeyEvent.KEYCODE_DPAD_UP);
-        else if (control == 1) onDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        if (control == 0) input.onDpad(KeyEvent.KEYCODE_DPAD_UP);
+        else if (control == 1) input.onDpad(KeyEvent.KEYCODE_DPAD_DOWN);
         else if (control == 2) {
-            state = TvScreenView.PLAYER;
+            navigation.goTo(ScreenStates.PLAYER_STATE);
             playback.enterFullscreen();
             screen.invalidate();
         } else if (control == 3) {
-            if (state == TvScreenView.PREVIEW) toggleVpnPreview();
+            if (navigation.current() == ScreenStates.PREVIEW_STATE) toggleVpnPreview();
             else toggleVpnPlayback();
         } else if (control == 4) {
             openPipEventPicker();
         }
     }
 
-    private void toggleVpnPlayback() {
+    @Override public void toggleVpnPlayback() {
         if (!vpnAvailable() || events.isEmpty()) return;
         Event event = events.get(selectedEvent);
         Source source = event.sources.get(selectedSource);
-        if (vpnPlayback || vpnConnecting) {
-            vpnPlayback = false;
-            vpnConnecting = false;
-            vpnProxyUrl = null;
-            playback.switchPrimary(source);
-            return;
-        }
-        vpnConnecting = true;
-        serverClient.requestVpnStreamUrl(serverBase, event.id, source.id, new ServerClient.StreamUrlCallback() {
-            @Override public void onSuccess(String url, String proxyUrl) {
-                main.post(() -> {
-                    Source vpnSource = new Source(source.id, source.name, url, source.userAgent, source.pageUrl);
-                    vpnPlayback = true;
-                    vpnConnecting = false;
-                    vpnProxyUrl = proxyUrl;
-                    playback.switchPrimary(vpnSource, true, proxyUrl);
-                });
-            }
-            @Override public void onError(Exception error) {
-                main.post(() -> {
-                    vpnPlayback = false;
-                    vpnConnecting = false;
-                    vpnProxyUrl = null;
-                });
-            }
-        });
+        playback.toggleVpnPlayback(serverBase, event, source);
     }
 
-    @Override public int onScroll(float deltaY) {
-        if (!screen.isCompactLayout()) return 0;
-        int steps = Math.round(-deltaY / (state == TvScreenView.EVENTS || state == TvScreenView.PIP_EVENTS
-                ? screen.compactEventRowDp() : 48f));
-        if (steps == 0) return 0;
-        int oldOffset = 0;
-        if (state == TvScreenView.EVENTS && !events.isEmpty()) {
-            oldOffset = eventOffset;
-            eventOffset = Math.max(0, Math.min(events.size() - screen.visibleRows(), eventOffset + steps));
-            selectedEvent = NavigationState.clamp(eventOffset + listFocusPosition(), events.size());
-        } else if (state == TvScreenView.SOURCES && !events.isEmpty()) {
-            oldOffset = sourceOffset;
-            int size = events.get(selectedEvent).sources.size();
-            sourceOffset = Math.max(0, Math.min(size - screen.visibleRows(), sourceOffset + steps));
-            selectedSource = NavigationState.clamp(sourceOffset + listFocusPosition(), size);
-        } else if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
-            oldOffset = pipEventOffset;
-            pipEventOffset = Math.max(0, Math.min(events.size() - screen.visibleRows(), pipEventOffset + steps));
-            pipEvent = NavigationState.clamp(pipEventOffset + listFocusPosition(), events.size());
-        } else if (state == TvScreenView.PIP_SOURCES && !events.isEmpty()) {
-            oldOffset = pipSourceOffset;
-            int size = events.get(pipEvent).sources.size();
-            pipSourceOffset = Math.max(0, Math.min(size - screen.visibleRows(), pipSourceOffset + steps));
-            pipSource = NavigationState.clamp(pipSourceOffset + listFocusPosition(), size);
-        }
-        screen.invalidate();
-        if (state == TvScreenView.EVENTS) return eventOffset - oldOffset;
-        if (state == TvScreenView.SOURCES) return sourceOffset - oldOffset;
-        if (state == TvScreenView.PIP_EVENTS) return pipEventOffset - oldOffset;
-        return pipSourceOffset - oldOffset;
-    }
+    @Override public int onScroll(float deltaY) { return input.scroll(deltaY); }
 
-    @Override public void onDpad(int keyCode) {
-        if (state == TvScreenView.ERROR && (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)) { discoverServer(); return; }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-            int direction = keyCode == KeyEvent.KEYCODE_DPAD_UP ? -1 : 1;
-            if (state == TvScreenView.EVENTS && !events.isEmpty()) {
-                selectedEvent = NavigationState.clamp(selectedEvent + direction, events.size());
-                eventOffset = NavigationState.offsetFor(selectedEvent, events.size(), screen.visibleRows(), listFocusPosition());
-            }
-            if (state == TvScreenView.SOURCES && !events.isEmpty() && !events.get(selectedEvent).sources.isEmpty()) {
-                selectedSource = NavigationState.clamp(selectedSource + direction, events.get(selectedEvent).sources.size());
-                sourceOffset = NavigationState.offsetFor(selectedSource, events.get(selectedEvent).sources.size(), screen.visibleRows(), listFocusPosition());
-            }
-            if (state == TvScreenView.PREVIEW && !events.isEmpty() && !events.get(selectedEvent).sources.isEmpty()) {
-                selectedSource = NavigationState.clamp(selectedSource + direction, events.get(selectedEvent).sources.size());
-                preview(events.get(selectedEvent).sources.get(selectedSource));
-            }
-            if ((state == TvScreenView.PLAYER || state == TvScreenView.DUAL) && !events.isEmpty() && !events.get(selectedEvent).sources.isEmpty()) {
-                selectedSource = NavigationState.clamp(selectedSource + direction, events.get(selectedEvent).sources.size());
-                vpnPlayback = false;
-                vpnConnecting = false;
-                vpnProxyUrl = null;
-                playback.switchPrimary(events.get(selectedEvent).sources.get(selectedSource));
-            }
-            if (state == TvScreenView.PIP_EVENTS && !events.isEmpty()) {
-                pipEvent = NavigationState.clamp(pipEvent + direction, events.size());
-                pipEventOffset = NavigationState.offsetFor(pipEvent, events.size(), screen.visibleRows(), listFocusPosition());
-            }
-            if (state == TvScreenView.PIP_SOURCES && !events.get(pipEvent).sources.isEmpty()) {
-                pipSource = NavigationState.clamp(pipSource + direction, events.get(pipEvent).sources.size());
-                pipSourceOffset = NavigationState.offsetFor(pipSource, events.get(pipEvent).sources.size(), screen.visibleRows(), listFocusPosition());
-            }
-            screen.invalidate(); return;
-        }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (state == TvScreenView.PREVIEW) {
-                int actionCount = vpnAvailable() ? 3 : 2;
-                previewAction = Math.max(0, Math.min(actionCount - 1, previewAction + (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1)));
-                screen.invalidate(); return;
-            }
-            if (state == TvScreenView.DUAL && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                promotePipToPrimary(); return;
-            }
-        }
-    }
+    @Override public void onDpad(int keyCode) { input.onDpad(keyCode); }
 
-    @Override public void onConfirm() {
-        if (state == TvScreenView.ERROR) { discoverServer(); return; }
-        if (state == TvScreenView.UPDATE) { installPendingUpdate(); return; }
-        if (state == TvScreenView.EVENTS) showSources();
-        else if (state == TvScreenView.SOURCES && !events.get(selectedEvent).sources.isEmpty()) preview(events.get(selectedEvent).sources.get(selectedSource));
-        else if (state == TvScreenView.PREVIEW) {
-            if (previewAction == 1) openPipEventPicker();
-            else if (previewAction == 2) toggleVpnPreview();
-            else { state = TvScreenView.PLAYER; playback.enterFullscreen(); }
-        } else if (state == TvScreenView.PIP_EVENTS) showPipSources();
-        else if (state == TvScreenView.PIP_SOURCES && !events.get(pipEvent).sources.isEmpty()) startPip(events.get(pipEvent).sources.get(pipSource));
-        screen.invalidate();
-    }
+    @Override public void onConfirm() { input.onConfirm(); }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN
-                && (state == TvScreenView.PLAYER || state == TvScreenView.DUAL)
+                && (navigation.current() == ScreenStates.PLAYER_STATE || navigation.current() == ScreenStates.DUAL_STATE)
                 && (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP
                 || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN
-                || (state == TvScreenView.DUAL && event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT))) {
+                || (navigation.current() == ScreenStates.DUAL_STATE && event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT))) {
             onDpad(event.getKeyCode());
             return true;
         }
@@ -663,7 +344,7 @@ public class MainActivity extends Activity implements TvScreenView.Host {
 
     @Override protected void onStop() {
         super.onStop();
-        resumePlaybackOnStart = state == TvScreenView.PLAYER || state == TvScreenView.DUAL;
+        resumePlaybackOnStart = navigation.current() == ScreenStates.PLAYER_STATE || navigation.current() == ScreenStates.DUAL_STATE;
         if (resumePlaybackOnStart) {
             playback.pauseAll();
         }
@@ -671,20 +352,17 @@ public class MainActivity extends Activity implements TvScreenView.Host {
 
     @Override protected void onStart() {
         super.onStart();
-        if (resumePlaybackOnStart && (state == TvScreenView.PLAYER || state == TvScreenView.DUAL)) {
+        if (resumePlaybackOnStart && (navigation.current() == ScreenStates.PLAYER_STATE || navigation.current() == ScreenStates.DUAL_STATE)) {
             playback.resumeAll();
         }
         resumePlaybackOnStart = false;
     }
 
     @Override protected void onDestroy() {
-        main.removeCallbacks(discoveryTimeout);
         main.removeCallbacks(refreshTask);
-        stopDiscovery();
+        discovery.close();
         playback.release();
-        network.shutdownNow();
-        serverClient.close();
-        if (updateManager != null) updateManager.close();
+        catalog.close();
         super.onDestroy();
     }
 

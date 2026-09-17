@@ -24,6 +24,7 @@ import okhttp3.OkHttpClient;
 import com.futbol.tv.model.Source;
 
 /** Owns all ExoPlayer instances and their visual bounds. */
+@androidx.media3.common.util.UnstableApi
 public final class PlaybackController {
     public interface Listener { void onMessage(String message); }
 

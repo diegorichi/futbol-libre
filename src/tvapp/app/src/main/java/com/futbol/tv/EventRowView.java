@@ -1,5 +1,7 @@
 package com.futbol.tv;
 
+import com.futbol.tv.ui.layout.TvVisualTokens;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -56,10 +58,10 @@ public final class EventRowView extends View {
         if (event == null) return;
         float width = getWidth() / density;
         float baseline = compact ? 40 : 43;
-        paint.setColor(selected ? Color.rgb(25, 57, 77) : Color.TRANSPARENT);
+        paint.setColor(selected ? TvVisualTokens.SURFACE : Color.TRANSPARENT);
         c.drawRoundRect(new RectF(dp(0), dp(1), getWidth() - dp(0), getHeight() - dp(1)), dp(10), dp(10), paint);
         String time = event.startsAt.length() >= 16 ? event.startsAt.substring(11, 16) : "--:--";
-        text(c, time, compact ? 24 : 24, baseline, compact ? 17 : 19, Color.rgb(94, 234, 212), true);
+        text(c, time, compact ? 24 : 24, baseline, compact ? 17 : 19, TvVisualTokens.ACCENT, true);
         String sources = event.sources.size() + " fuente" + (event.sources.size() == 1 ? "" : "s");
         paint.setTextSize(dp(compact ? 13 : 16));
         float sourceWidth = paint.measureText(sources) / density;
@@ -70,7 +72,7 @@ public final class EventRowView extends View {
             String[] teams = parts[1].split("\\s+(?i:vs\\.?)\\s+", 2);
             float size = compact ? 16 : 16;
             text(c, fit(teams[0], maxWidth, size), matchX, baseline - 13, size, Color.WHITE, selected);
-            text(c, "VS", matchX, baseline + 3, compact ? 12 : 13, Color.rgb(94, 234, 212), true);
+            text(c, "VS", matchX, baseline + 3, compact ? 12 : 13, TvVisualTokens.ACCENT, true);
             text(c, fit(teams.length > 1 ? teams[1] : "", maxWidth, size), matchX, baseline + 19, size, Color.WHITE, selected);
             text(c, fit(parts[0], maxWidth, 11), matchX, baseline + 35, 11, Color.LTGRAY, false);
         } else {
