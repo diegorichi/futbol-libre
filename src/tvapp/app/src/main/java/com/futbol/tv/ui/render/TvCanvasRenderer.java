@@ -172,13 +172,19 @@ public final class TvCanvasRenderer {
         String title = event == null ? "" : event.title;
         String source = selectedSource(event);
         if (layout.compact()) {
+            boolean landscape = heightDp() < widthDp();
             String[] titleParts = titleParts(title);
             float titleX = 16f;
             float titleMax = widthDp() - 32f;
-            text(canvas, fit(titleParts[0].isEmpty() ? titleParts[1] : titleParts[0], titleMax, 12),
-                    titleX, preview.panelTop + 22, 12, TvVisualTokens.ACCENT, true);
-            text(canvas, fit(titleParts[0].isEmpty() ? "" : titleParts[1], titleMax, 15),
-                    titleX, preview.panelTop + 43, 15, TvVisualTokens.ACCENT, true);
+            if (landscape) {
+                text(canvas, fit(title, titleMax, 15), titleX, preview.panelTop + 22,
+                        15, TvVisualTokens.ACCENT, true);
+            } else {
+                text(canvas, fit(titleParts[0].isEmpty() ? titleParts[1] : titleParts[0], titleMax, 12),
+                        titleX, preview.panelTop + 22, 12, TvVisualTokens.ACCENT, true);
+                text(canvas, fit(titleParts[0].isEmpty() ? "" : titleParts[1], titleMax, 15),
+                        titleX, preview.panelTop + 43, 15, TvVisualTokens.ACCENT, true);
+            }
             iconButton(canvas, preview.up, Icon.UP, false);
             iconButton(canvas, preview.down, Icon.DOWN, false);
             float sourceX = 116f;
