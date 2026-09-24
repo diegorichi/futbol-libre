@@ -2,6 +2,8 @@
 
 import logging
 
+from selenium.common.exceptions import TimeoutException
+
 from .strategy_registry import EVENT_STRATEGIES
 from .iframe_wait import wait_for_iframes
 
@@ -16,7 +18,14 @@ def _clave_evento(evento):
 
 def extraer_eventos(driver, iframe_timeout=10):
     """Busca eventos en todos los contextos y combina las estrategias válidas."""
-    wait_for_iframes(driver, timeout=iframe_timeout)
+    try:
+        wait_for_iframes(driver, timeout=iframe_timeout)
+    except TimeoutException:
+        LOGGER.warning(
+            "Los iframes no se estabilizaron en %ss; extrayendo el DOM disponible",
+            iframe_timeout,
+        )
+        driver.switch_to.default_content()
     encontrados = []
     estrategia_usada = None
 
