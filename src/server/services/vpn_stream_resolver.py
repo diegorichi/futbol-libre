@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
 
-from scraping.browser_driver import BrowserDriverFactory
+from scraping.browser_driver import BrowserDriverFactory, close_browser
 from scraping.stream_extractor import StreamExtractionPool
 
 
@@ -45,10 +45,7 @@ class VpnStreamResolver:
                 extractor = StreamExtractionPool(driver, espera=8)
                 url, origin = extractor.extract_from_link(driver, source.page_url)
             finally:
-                try:
-                    driver.quit()
-                except Exception:
-                    pass
+                close_browser(driver)
             if not url:
                 raise RuntimeError("No se encontró un stream HLS por VPN")
 

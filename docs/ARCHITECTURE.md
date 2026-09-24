@@ -36,7 +36,7 @@ update-futbol-libre-sites.sh -> SearXNG -> config/futbol_libre_urls.env
 
 - Entrada: `FUTBOL_LIBRE_URL_FILE` primero; `.env` queda como fallback.
 - `FootballUpdater` crea el driver Selenium, valida cada dominio y conserva los válidos.
-- `src/scraping/site_scraper.py` recorre sitios y agrega `fuente` a eventos/opciones.
+- `src/scraping/site_scraper.py` recorre sitios con un Chrome aislado por dominio y agrega `fuente` a eventos/opciones. Un timeout o sesión rota se cierra antes de continuar con el siguiente sitio; su perfil temporal también se elimina aunque WebDriver falle.
 - `src/scraping/event_extractor.py` combina estrategias HTML, PHP, canal directo, tiempo estructurado, agenda y menú; también recorre iframes.
 - `event_matching.py` agrupa eventos equivalentes entre sitios.
 - Se separan eventos activos y próximos. La extracción de streams opera sobre las opciones de eventos activos y luego también arma el contrato de eventos de TV.

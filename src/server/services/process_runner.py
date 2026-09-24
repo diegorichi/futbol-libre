@@ -1,6 +1,9 @@
+import glob
 import os
+import shutil
 import signal
 import subprocess
+import tempfile
 import threading
 import time
 
@@ -44,8 +47,17 @@ class ProcessRunner:
             if not pids:
                 return False
 
+            own_session_id = os.getsid(0)
+            session_ids = {
+                session_id
+                for pid in pids
+                if (session_id := self._session_id(pid)) not in {None, own_session_id}
+            }
+            for session_id in session_ids:
+                self._terminate_session(session_id)
             for pid in pids:
-                self._stop_pid(pid, signal.SIGTERM)
+                if self._session_id(pid) not in session_ids:
+                    self._stop_pid(pid, signal.SIGTERM)
 
             deadline = time.monotonic() + 5
             while time.monotonic() < deadline and any(self._pid_exists(pid) for pid in pids):
@@ -114,6 +126,7 @@ class ProcessRunner:
             self.status.finish(False, str(error))
         finally:
             if process is not None:
+                self._terminate_session(process.pid)
                 self._remove_pid(process.pid)
 
     def _read_pid(self):
@@ -135,6 +148,66 @@ class ProcessRunner:
                 self._signal_process_tree(pid, signal_number)
         except (ProcessLookupError, OSError):
             pass
+
+    def _terminate_session(self, session_id, grace_seconds=5):
+        if session_id == os.getsid(0):
+            return
+        self._signal_session(session_id, signal.SIGTERM)
+        deadline = time.monotonic() + grace_seconds
+        while time.monotonic() < deadline and self._session_pids(session_id):
+            time.sleep(0.1)
+        if self._session_pids(session_id):
+            self._signal_session(session_id, signal.SIGKILL)
+        self._cleanup_browser_profiles(session_id)
+
+    @staticmethod
+    def _cleanup_browser_profiles(session_id):
+        pattern = os.path.join(
+            tempfile.gettempdir(),
+            f"futbol-chrome-{session_id}-*",
+        )
+        for profile_dir in glob.glob(pattern):
+            if os.path.isdir(profile_dir):
+                shutil.rmtree(profile_dir, ignore_errors=True)
+
+    @staticmethod
+    def _session_id(pid):
+        try:
+            return os.getsid(pid)
+        except (ProcessLookupError, PermissionError, OSError):
+            return None
+
+    @staticmethod
+    def _session_pids(session_id):
+        try:
+            result = subprocess.run(
+                ["ps", "-axo", "pid=,sid="],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            return []
+        pids = []
+        for line in result.stdout.splitlines():
+            fields = line.split()
+            if len(fields) != 2:
+                continue
+            try:
+                pid, current_session_id = int(fields[0]), int(fields[1])
+            except ValueError:
+                continue
+            if current_session_id == session_id:
+                pids.append(pid)
+        return pids
+
+    @classmethod
+    def _signal_session(cls, session_id, signal_number):
+        for pid in reversed(cls._session_pids(session_id)):
+            try:
+                os.kill(pid, signal_number)
+            except ProcessLookupError:
+                pass
 
     @staticmethod
     def _pid_exists(pid):

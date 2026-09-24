@@ -7,7 +7,7 @@ from threading import Lock
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
-from .browser_driver import BrowserDriverFactory
+from .browser_driver import BrowserDriverFactory, close_browser
 
 PLAYBACK_URL = re.compile(r"\bplaybackURL\b\s*[:=]\s*[\"'](https?://[^\"']+)[\"']", re.I)
 M3U8_URL = re.compile(r"https?://[^\s\"'<>\\]+\.m3u8(?:\?[^\s\"'<>\\]*)?", re.I)
@@ -104,8 +104,7 @@ class StreamExtractionPool:
             return self.extract_from_link(driver, url)
         finally:
             if driver is not None:
-                try: driver.quit()
-                except WebDriverException: pass
+                close_browser(driver)
             self._mark_completed(url)
 
     def _mark_completed(self, url):

@@ -14,6 +14,9 @@ class _Driver:
         self.current_url = url
         self.opened.append(url)
 
+    def quit(self):
+        pass
+
 
 def test_validation_and_scraping_open_each_site_once():
     driver = _Driver()
@@ -60,3 +63,45 @@ def test_validation_failure_does_not_run_extractor():
     assert extracted == []
     assert errors[0]["url"] == "https://invalid.test"
     assert errors[0]["phase"] == "validation"
+
+
+def test_isolated_driver_failure_does_not_break_following_site():
+    class IsolatedDriver(_Driver):
+        def __init__(self, fails=False):
+            super().__init__()
+            self.fails = fails
+            self.closed = False
+
+        def get(self, url):
+            super().get(url)
+            if self.fails:
+                raise TimeoutError("site timed out")
+
+        def quit(self):
+            self.closed = True
+
+    drivers = [IsolatedDriver(fails=True), IsolatedDriver()]
+    created = []
+
+    def driver_factory():
+        driver = drivers[len(created)]
+        created.append(driver)
+        return driver
+
+    scraper = SiteScraper(
+        extractor=lambda current_driver: (
+            [{"title": current_driver.current_url, "opciones": []}],
+            "test",
+        ),
+        matcher=lambda events: events,
+    )
+    raw, sites, errors = scraper.scrape(
+        None,
+        ["https://broken.test", "https://healthy.test"],
+        driver_factory=driver_factory,
+    )
+
+    assert [event["title"] for event in raw] == ["https://healthy.test"]
+    assert [site["url"] for site in sites] == ["https://healthy.test"]
+    assert [error["url"] for error in errors] == ["https://broken.test"]
+    assert all(driver.closed for driver in drivers)
