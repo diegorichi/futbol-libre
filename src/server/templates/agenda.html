@@ -2,13 +2,27 @@
 {% block content %}
 <section class="card wide agenda-page">
   <div class="channels-heading"><div><p class="section-kicker">Agenda deportiva</p><h1>Agenda</h1></div></div>
-  {% for date, events in agenda.items() %}
-    <h2 class="agenda-date">{{ "HOY" if loop.first else date }}</h2>
-    <div class="agenda-list">
-      {% for event in events %}
-        <article class="agenda-row"><time>{{ event.time }}</time><span>{{ event.tournament or "—" }}</span><strong>{{ event.match }}</strong><span>{{ event.channel or "—" }}</span></article>
-      {% endfor %}
+  <div class="agenda-filter">
+    <label for="agenda-filter">Buscar en todos los días</label>
+    <input id="agenda-filter" type="search" placeholder="Torneo, canal o evento" autocomplete="off">
+    <p id="agenda-search-summary" class="muted agenda-search-summary" role="status" aria-live="polite"></p>
+  </div>
+  <div id="agenda-browse">
+    <div class="agenda-tabs" role="tablist" aria-label="Días de la agenda">
+      {% for day in days %}<button type="button" role="tab" id="agenda-tab-{{ loop.index0 }}" aria-controls="agenda-panel-{{ loop.index0 }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ '0' if loop.first else '-1' }}">{{ day.label }}</button>{% endfor %}
     </div>
-  {% else %}<p class="empty-state">No hay próximos eventos.</p>{% endfor %}
+    {% for day in days %}
+      <section class="agenda-panel" id="agenda-panel-{{ loop.index0 }}" data-day-label="{{ day.label }}" role="tabpanel" aria-labelledby="agenda-tab-{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+        <h2 class="agenda-date">{{ day.label }}</h2>
+        {% if day.events %}<div class="agenda-list">
+          {% for event in day.events %}
+            <article class="agenda-row" data-search="{{ event.sport or '' }} {{ event.tournament or '' }} {{ event.match }} {{ event.channel or '' }}"><time>{{ event.time }}</time><span>{{ event.tournament or event.sport or "—" }}</span><strong>{{ event.match }}</strong><span>{{ event.channel or "—" }}</span></article>
+          {% endfor %}
+        </div>{% else %}<p class="empty-state">No hay eventos para este día.</p>{% endif %}
+      </section>
+    {% endfor %}
+  </div>
+  <div id="agenda-search-results" class="agenda-search-results" aria-label="Resultados de búsqueda" hidden></div>
 </section>
+<script src="{{ url_for('static', filename='agenda.js') }}"></script>
 {% endblock %}

@@ -12,6 +12,7 @@ services:
       M3U_FILE: /data/eventos.m3u
       XML_FILE: /data/eventos.xml
       AGENDA_FILE: /data/agenda_web.json
+      FUTURE_AGENDA_FILE: /data/agenda_future.json
       TV_EVENTS_FILE: /data/eventos.json
       FUTBOL_LIBRE_URL_FILE: /data/futbol_libre_urls.env
       PROGRESS_FILE: /data/.update-futbollibre.progress.json

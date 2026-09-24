@@ -26,6 +26,7 @@ update-futbollibre.sh -> python -m application.update_catalog
        mDNS _futbol._tcp o UDP 45678
 
 agenda.sh / API / agenda.py -> AgendaService -> NTFY opcional
+update-future-agenda.sh -> Clarín + TyC -> deduplicación -> data/agenda_future.json -> pestañas futuras de /agenda
 update-futbol-libre-sites.sh -> SearXNG -> config/futbol_libre_urls.env
 ```
 
@@ -117,6 +118,17 @@ Son integraciones separadas:
 - `update_ntfy()` publica la agenda en `NTFY_URL` con título `Grilla Deportiva`.
 - `update_ntfy()` publica la agenda en `NTFY_URL` si está configurada; sin esa variable, la operación se omite explícitamente.
 - Flask expone `/system-update/ntfy` y `/system-update/sites` para dispararlas manualmente.
+
+### 8. Agenda web de hoy y futura
+
+- `data/agenda_web.json` conserva el contrato existente: se genera desde los sitios de streaming y contiene únicamente los eventos restantes de hoy.
+- `update-future-agenda.sh` corre una vez por día y mezcla la agenda estructurada de Clarín (`FUTURE_AGENDA_URL`) con el HTML semántico de TyC Sports (`FUTURE_AGENDA_TYC_URL`).
+- La mezcla deduplica por fecha/hora, equipos normalizados y torneo compatible; al coincidir conserva un solo evento y combina canales sin repetirlos.
+- Las dos fuentes deben responder correctamente antes de reemplazar atómicamente `data/agenda_future.json`; una actualización parcial no borra la última agenda válida.
+- La agenda futura exige fecha y hora explícitas; no usa `EventClock.nearest()` ni infiere mañana desde una hora.
+- `/agenda` presenta siete pestañas calendario. La pestaña `Hoy` lee solo `agenda_web.json`; las seis siguientes leen solo `agenda_future.json`, incluyendo días sin eventos.
+- El filtro de `/agenda` opera únicamente en presentación sobre los siete días ya cargados y busca por deporte, torneo, evento o canal; no modifica ninguno de los dos archivos.
+- `/api/v1/agenda` conserva el contrato anterior y sigue exponiendo únicamente la agenda de hoy.
 
 ## Reglas para cambios
 

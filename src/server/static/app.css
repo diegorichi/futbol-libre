@@ -77,7 +77,15 @@ progress { width: 100%; height: 1.2rem; } .progress-value { color: var(--muted);
 .source-block.vpn-active .source-player-row { background: #160b10; }
 .player-button svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state { margin: 0; padding: 2rem; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
+.agenda-filter { margin-bottom: 1rem; }
+.agenda-filter label { margin: 0 0 .45rem; color: #cbd5e1; font-weight: 650; }
+.agenda-filter input { margin: 0; background: #0b1220; }
+.agenda-search-summary { min-height: 1.5rem; margin: .45rem 0 0; font-size: .9rem; }
+.agenda-search-results { display: grid; gap: .75rem; }
 .agenda-date { margin: 1.5rem 0 .65rem; color: #5eead4; font-size: 1rem; letter-spacing: .08em; }
+.agenda-tabs { display: flex; gap: .5rem; padding-bottom: .35rem; overflow-x: auto; scrollbar-width: thin; }
+.agenda-tabs button { flex: 0 0 auto; width: auto; min-height: 2.5rem; margin: 0; padding: .55rem .8rem; border-color: var(--line); background: #0f172a; color: #bfdbfe; white-space: nowrap; }
+.agenda-tabs button[aria-selected="true"] { border-color: #5eead4; background: #164e63; color: #fff; }
 .agenda-list { display: grid; gap: .5rem; }
 .agenda-row { display: grid; grid-template-columns: 5.5rem minmax(9rem, 1fr) minmax(0, 2fr) minmax(9rem, 1fr); gap: 1rem; align-items: center; padding: .85rem 1rem; border: 1px solid var(--line); border-radius: 9px; background: #192438; }
 .agenda-row time { color: #5eead4; font-size: 1.15rem; font-weight: 750; }

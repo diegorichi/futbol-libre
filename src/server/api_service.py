@@ -1,7 +1,7 @@
 import os
 import requests
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
 from urllib.parse import urlencode
@@ -13,6 +13,7 @@ from server.models.task_status import TaskStatus
 from server.services.agenda_service import AgendaService
 from server.services.catalog_service import CatalogService
 from server.services.web_agenda_service import WebAgendaService
+from server.services.future_agenda_service import FutureAgendaService
 from server.services.process_runner import ProcessRunner
 from server.discovery import MdnsAdvertiser, UdpDiscoveryResponder
 from server.services.vpn_service import VpnService
@@ -106,11 +107,22 @@ def channels_page():
 
 @app.get("/agenda")
 def agenda_page():
-    events = WebAgendaService(configured_path("AGENDA_FILE", "data/agenda_web.json")).events()
-    grouped = {}
-    for event in events:
-        grouped.setdefault(event["date"], []).append(event)
-    return render_template("agenda.html", agenda=grouped)
+    now = datetime.now()
+    today_events = WebAgendaService(configured_path("AGENDA_FILE", "data/agenda_web.json"), now).events()
+    future_events = FutureAgendaService(configured_path("FUTURE_AGENDA_FILE", "data/agenda_future.json"), now).events()
+    grouped = {event["date"]: [] for event in today_events + future_events}
+    for event in today_events + future_events:
+        grouped[event["date"]].append(event)
+    weekdays = ("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+    days = []
+    for offset in range(7):
+        date = (now + timedelta(days=offset)).date()
+        days.append({
+            "date": date.isoformat(),
+            "label": "Hoy" if offset == 0 else f"{weekdays[date.weekday()]} {date.strftime('%d/%m')}",
+            "events": grouped.get(date.isoformat(), []),
+        })
+    return render_template("agenda.html", days=days)
 
 
 @app.get("/sistemas")

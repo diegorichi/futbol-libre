@@ -113,6 +113,25 @@ class TvApiContractTest(unittest.TestCase):
             self.assertEqual(events[0]["channel"], "ESPN, ...")
             self.assertEqual(events[1]["date"], "2026-09-12")
 
+    def test_agenda_page_has_today_and_six_future_day_tabs(self):
+        response = self.client.get("/agenda")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text.count('role="tab"'), 7)
+        self.assertIn(">Hoy</button>", response.text)
+        self.assertIn("agenda.js", response.text)
+
+    def test_agenda_page_has_cross_day_event_filter(self):
+        response = self.client.get("/agenda")
+        javascript = self.client.get("/static/agenda.js")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('for="agenda-filter"', response.text)
+        self.assertIn('id="agenda-filter" type="search"', response.text)
+        self.assertIn('id="agenda-search-results"', response.text)
+        self.assertIn("row.dataset.search", javascript.text)
+        self.assertIn("panel.dataset.dayLabel", javascript.text)
+
     def test_events_contract(self):
         response = self.client.get("/api/v1/events")
         self.assertEqual(response.status_code, 200)

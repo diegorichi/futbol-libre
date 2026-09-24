@@ -126,7 +126,7 @@ set_env_value "CHROME_BINARY" "$BROWSER_BINARY"
 set_env_value "CHROMEDRIVER_PATH" "$DRIVER_BINARY"
 
 source "$PROJECT_ROOT/config/config.sh"
-chmod +x "$PROJECT_ROOT/server.sh" "$PROJECT_ROOT/update-futbollibre.sh" "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$PROJECT_ROOT/agenda.sh"
+chmod +x "$PROJECT_ROOT/server.sh" "$PROJECT_ROOT/update-futbollibre.sh" "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$PROJECT_ROOT/update-future-agenda.sh" "$PROJECT_ROOT/agenda.sh"
 
 ask_yes_no() {
     local prompt="$1" answer=""
@@ -143,9 +143,11 @@ install_crons() {
         printf '%s\n' "$current" \
             | grep -Fv "$PROJECT_ROOT/update-futbollibre.sh" \
             | grep -Fv "$PROJECT_ROOT/update-futbol-libre-sites.sh" \
+            | grep -Fv "$PROJECT_ROOT/update-future-agenda.sh" \
             > "$cron_file" || true
     fi
     printf '30 7 * * * /bin/bash %s > %s 2>&1\n' "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$LOG_FILE" >> "$cron_file"
+    printf '45 7 * * * /bin/bash %s >> %s 2>&1\n' "$PROJECT_ROOT/update-future-agenda.sh" "$LOG_FILE" >> "$cron_file"
     printf '0 8 * * * /bin/bash %s >> %s 2>&1\n' "$PROJECT_ROOT/update-futbollibre.sh" "$LOG_FILE" >> "$cron_file"
     crontab "$cron_file"
     rm -f "$cron_file"
