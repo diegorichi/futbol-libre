@@ -25,19 +25,26 @@ class _Driver:
 
 def test_driver_factory_sets_timeout_and_removes_profile(monkeypatch, tmp_path):
     driver = _Driver()
+    captured = {}
     profile_dir = tmp_path / "profile"
     profile_dir.mkdir()
     monkeypatch.setattr(browser_driver.webdriver, "ChromeOptions", _Options)
-    monkeypatch.setattr(browser_driver.webdriver, "Chrome", lambda **_kwargs: driver)
+    monkeypatch.setattr(
+        browser_driver.webdriver,
+        "Chrome",
+        lambda **kwargs: captured.update(kwargs) or driver,
+    )
     monkeypatch.setattr(browser_driver.tempfile, "mkdtemp", lambda **_kwargs: str(profile_dir))
 
     created = browser_driver.BrowserDriverFactory(
         headless=False,
         page_load_timeout=17,
+        page_load_strategy="eager",
     ).create()
 
     assert created is driver
     assert driver.page_load_timeout == 17
+    assert captured["options"].page_load_strategy == "eager"
     assert Path(driver._futbol_profile_dir) == profile_dir
 
     browser_driver.close_browser(driver)

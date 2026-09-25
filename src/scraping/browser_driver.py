@@ -11,6 +11,7 @@ load_dotenv(os.getenv("ENV_FILE", ".env"))
 LOGGER = logging.getLogger(__name__)
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 DEFAULT_PAGE_LOAD_TIMEOUT_SECONDS = 30
+DEFAULT_PAGE_LOAD_STRATEGY = "eager"
 PROFILE_PREFIX = "futbol-chrome"
 
 
@@ -27,14 +28,24 @@ def close_browser(driver):
 
 
 class BrowserDriverFactory:
-    def __init__(self, user_agent=USER_AGENT, headless=None, proxy_url=None, page_load_timeout=None):
+    def __init__(
+        self,
+        user_agent=USER_AGENT,
+        headless=None,
+        proxy_url=None,
+        page_load_timeout=None,
+        page_load_strategy=None,
+    ):
         self.user_agent = user_agent
         self.headless = headless
         self.proxy_url = proxy_url
         self.page_load_timeout = page_load_timeout
+        self.page_load_strategy = page_load_strategy
 
     def create(self):
         options = webdriver.ChromeOptions()
+        strategy = self._page_load_strategy()
+        options.page_load_strategy = strategy
         profile_dir = tempfile.mkdtemp(prefix=f"{PROFILE_PREFIX}-{os.getsid(0)}-")
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument(f"--user-data-dir={profile_dir}")
@@ -58,7 +69,11 @@ class BrowserDriverFactory:
         driver._futbol_profile_dir = profile_dir
         timeout = self._page_load_timeout()
         driver.set_page_load_timeout(timeout)
-        LOGGER.info("Chrome creado para scraping (timeout de carga: %ss)", timeout)
+        LOGGER.info(
+            "Chrome creado para scraping (estrategia: %s, timeout: %ss)",
+            strategy,
+            timeout,
+        )
         return driver
 
     def _headless(self):
@@ -69,3 +84,8 @@ class BrowserDriverFactory:
         if self.page_load_timeout is not None:
             return self.page_load_timeout
         return float(os.getenv("PAGE_LOAD_TIMEOUT_SECONDS", DEFAULT_PAGE_LOAD_TIMEOUT_SECONDS))
+
+    def _page_load_strategy(self):
+        if self.page_load_strategy is not None:
+            return self.page_load_strategy
+        return os.getenv("PAGE_LOAD_STRATEGY", DEFAULT_PAGE_LOAD_STRATEGY).strip().lower()

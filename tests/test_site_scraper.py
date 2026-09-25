@@ -1,3 +1,5 @@
+from selenium.common.exceptions import TimeoutException
+
 from scraping.site_scraper import SiteScraper
 
 
@@ -105,3 +107,36 @@ def test_isolated_driver_failure_does_not_break_following_site():
     assert [site["url"] for site in sites] == ["https://healthy.test"]
     assert [error["url"] for error in errors] == ["https://broken.test"]
     assert all(driver.closed for driver in drivers)
+
+
+def test_page_load_timeout_uses_partial_dom_when_browser_is_responsive():
+    class PartialDriver(_Driver):
+        def __init__(self):
+            super().__init__()
+            self.stopped = False
+
+        def get(self, url):
+            super().get(url)
+            raise TimeoutException("secondary resource did not finish")
+
+        def execute_script(self, script):
+            if script == "window.stop();":
+                self.stopped = True
+                return None
+            return 1024
+
+    driver = PartialDriver()
+    scraper = SiteScraper(
+        extractor=lambda current_driver: (
+            [{"title": current_driver.current_url, "opciones": []}],
+            "test",
+        ),
+        matcher=lambda events: events,
+    )
+
+    raw, sites, errors = scraper.scrape(driver, ["https://slow.test"])
+
+    assert driver.stopped is True
+    assert [event["title"] for event in raw] == ["https://slow.test"]
+    assert [site["url"] for site in sites] == ["https://slow.test"]
+    assert errors == []

@@ -1,7 +1,7 @@
 """Recorrido aislado de sitios y agrupación de eventos."""
 import logging
 from urllib.parse import urlparse
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from .browser_driver import close_browser
 from .event_extractor import extraer_eventos
 from .event_matching import agrupar_eventos
@@ -37,7 +37,8 @@ class SiteScraper:
                 if driver_factory is not None:
                     current_driver = driver_factory()
                 LOGGER.debug("Abriendo sitio %s", url)
-                current_driver.switch_to.default_content(); current_driver.get(url)
+                current_driver.switch_to.default_content()
+                self._open_page(current_driver, url)
                 if not _same_host(url, current_driver.current_url):
                     LOGGER.warning("Selenium redirigió %s -> %s; usando fallback HTTP", url, current_driver.current_url)
                     found, strategy = self._scrape_http_fallback(current_driver, url)
@@ -77,6 +78,32 @@ class SiteScraper:
     def _quit_driver(driver, url):
         LOGGER.debug("Cerrando Chrome aislado de %s", url)
         close_browser(driver)
+
+    @staticmethod
+    def _open_page(driver, url):
+        try:
+            driver.get(url)
+            return
+        except TimeoutException as timeout_error:
+            LOGGER.warning(
+                "La carga de %s no finalizó; revisando el DOM parcial",
+                url,
+            )
+            try:
+                driver.execute_script("window.stop();")
+                body_length = driver.execute_script(
+                    "return document.body ? document.body.innerHTML.length : 0"
+                )
+                current_url = driver.current_url
+            except WebDriverException:
+                raise timeout_error
+            if not current_url or body_length <= 0:
+                raise timeout_error
+            LOGGER.info(
+                "Continuando %s con DOM parcial de %d bytes",
+                url,
+                body_length,
+            )
 
     def _scrape_http_fallback(self, driver, url):
         html, error = fetch_html(url)
