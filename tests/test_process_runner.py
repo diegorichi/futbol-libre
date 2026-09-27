@@ -47,11 +47,14 @@ def test_stop_terminates_complete_scraper_session(monkeypatch, tmp_path):
 
 
 def test_cleanup_browser_profiles_only_removes_matching_session(monkeypatch, tmp_path):
-    matching = tmp_path / "futbol-chrome-900-one"
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    matching = runtime / "futbol-chrome-900-one"
     unrelated = tmp_path / "futbol-chrome-901-two"
     matching.mkdir()
     unrelated.mkdir()
     monkeypatch.setattr("server.services.process_runner.tempfile.gettempdir", lambda: str(tmp_path))
+    monkeypatch.setenv("FUTBOL_RUNTIME_TMPDIR", str(runtime))
 
     ProcessRunner._cleanup_browser_profiles(900)
 

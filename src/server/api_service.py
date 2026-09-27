@@ -1,6 +1,7 @@
 import os
 import requests
 import subprocess
+import shutil
 from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
@@ -213,7 +214,24 @@ vpn_relay = HlsRelay(vpn_service)
 
 @app.get("/api/v1/health")
 def tv_health():
-    return jsonify({"ok": True, "service": "futbol-server", "api_version": "v1"})
+    usage = shutil.disk_usage(PROJECT_ROOT)
+    free_mb = usage.free / (1024 * 1024)
+    warning_mb = max(1, int(os.getenv("DISK_FREE_WARNING_MB", "500")))
+    storage_ok = free_mb >= warning_mb
+    payload = {
+        "ok": storage_ok,
+        "service": "futbol-server",
+        "api_version": "v1",
+        "storage": {
+            "path": str(PROJECT_ROOT),
+            "free_bytes": usage.free,
+            "free_mb": round(free_mb, 1),
+            "used_percent": round((usage.used / usage.total) * 100, 1),
+            "warning_mb": warning_mb,
+            "status": "ok" if storage_ok else "low_space",
+        },
+    }
+    return jsonify(payload), 200 if storage_ok else 503
 
 
 def stream_capabilities():

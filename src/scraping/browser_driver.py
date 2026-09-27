@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -13,6 +14,29 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 DEFAULT_PAGE_LOAD_TIMEOUT_SECONDS = 30
 DEFAULT_PAGE_LOAD_STRATEGY = "eager"
 PROFILE_PREFIX = "futbol-chrome"
+RUNTIME_TMPDIR_ENV = "FUTBOL_RUNTIME_TMPDIR"
+SELENIUM_CACHE_ENV = "SE_CACHE_PATH"
+
+
+def runtime_tmpdir():
+    path = Path(os.getenv(RUNTIME_TMPDIR_ENV, os.path.join(tempfile.gettempdir(), "futbol-runtime")))
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def cleanup_runtime_cache():
+    """Remove only the temporary Selenium cache owned by this application."""
+    cache_path = Path(os.getenv(SELENIUM_CACHE_ENV, os.path.join(tempfile.gettempdir(), "futbol-selenium")))
+    if not cache_path.is_dir():
+        return
+    for child in cache_path.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+        else:
+            try:
+                child.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def close_browser(driver):
@@ -44,9 +68,11 @@ class BrowserDriverFactory:
 
     def create(self):
         options = webdriver.ChromeOptions()
+        runtime_dir = runtime_tmpdir()
+        os.environ.setdefault(SELENIUM_CACHE_ENV, str(runtime_dir.parent / "futbol-selenium"))
         strategy = self._page_load_strategy()
         options.page_load_strategy = strategy
-        profile_dir = tempfile.mkdtemp(prefix=f"{PROFILE_PREFIX}-{os.getsid(0)}-")
+        profile_dir = tempfile.mkdtemp(prefix=f"{PROFILE_PREFIX}-{os.getsid(0)}-", dir=runtime_dir)
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument(f"--user-data-dir={profile_dir}")
         options.add_argument("--window-size=1440,900")

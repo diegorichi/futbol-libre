@@ -2,6 +2,8 @@
 cd "$(dirname "$0")"
 
 PROJECT_ROOT="$(pwd)"
+cleanup_runtime() { "$PROJECT_ROOT/cleanup-runtime.sh" >/dev/null 2>&1 || true; }
+trap cleanup_runtime EXIT
 if command -v flock >/dev/null 2>&1; then
     exec 9>"$PROJECT_ROOT/data/.update-futbollibre.lock"
     if ! flock -n 9; then

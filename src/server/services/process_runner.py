@@ -175,13 +175,15 @@ class ProcessRunner:
 
     @staticmethod
     def _cleanup_browser_profiles(session_id):
-        pattern = os.path.join(
+        roots = {
             tempfile.gettempdir(),
-            f"futbol-chrome-{session_id}-*",
-        )
-        for profile_dir in glob.glob(pattern):
-            if os.path.isdir(profile_dir):
-                shutil.rmtree(profile_dir, ignore_errors=True)
+            os.getenv("FUTBOL_RUNTIME_TMPDIR", os.path.join(tempfile.gettempdir(), "futbol-runtime")),
+        }
+        for root in roots:
+            pattern = os.path.join(root, f"futbol-chrome-{session_id}-*")
+            for profile_dir in glob.glob(pattern):
+                if os.path.isdir(profile_dir):
+                    shutil.rmtree(profile_dir, ignore_errors=True)
 
     @staticmethod
     def _session_id(pid):

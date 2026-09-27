@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from scraping.browser_driver import USER_AGENT, BrowserDriverFactory, close_browser
+from scraping.browser_driver import USER_AGENT, BrowserDriverFactory, cleanup_runtime_cache, close_browser
 from scraping.site_scraper import SiteScraper
 from scraping.stream_extractor import StreamExtractionPool
 from infrastructure.progress import ProgressReporter
@@ -65,6 +65,7 @@ class FootballUpdater:
                 pool.close()
             if driver is not None:
                 close_browser(driver)
+            cleanup_runtime_cache()
 
     def _requested_urls(self, extra_only):
         if extra_only:

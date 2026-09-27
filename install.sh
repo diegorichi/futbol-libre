@@ -126,7 +126,7 @@ set_env_value "CHROME_BINARY" "$BROWSER_BINARY"
 set_env_value "CHROMEDRIVER_PATH" "$DRIVER_BINARY"
 
 source "$PROJECT_ROOT/config/config.sh"
-chmod +x "$PROJECT_ROOT/server.sh" "$PROJECT_ROOT/update-futbollibre.sh" "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$PROJECT_ROOT/update-future-agenda.sh" "$PROJECT_ROOT/agenda.sh"
+chmod +x "$PROJECT_ROOT/server.sh" "$PROJECT_ROOT/update-futbollibre.sh" "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$PROJECT_ROOT/update-future-agenda.sh" "$PROJECT_ROOT/agenda.sh" "$PROJECT_ROOT/cleanup-runtime.sh"
 
 ask_yes_no() {
     local prompt="$1" answer=""
@@ -144,14 +144,32 @@ install_crons() {
             | grep -Fv "$PROJECT_ROOT/update-futbollibre.sh" \
             | grep -Fv "$PROJECT_ROOT/update-futbol-libre-sites.sh" \
             | grep -Fv "$PROJECT_ROOT/update-future-agenda.sh" \
+            | grep -Fv "$PROJECT_ROOT/cleanup-runtime.sh" \
             > "$cron_file" || true
     fi
     printf '30 7 * * * /bin/bash %s > %s 2>&1\n' "$PROJECT_ROOT/update-futbol-libre-sites.sh" "$LOG_FILE" >> "$cron_file"
     printf '45 7 * * * /bin/bash %s >> %s 2>&1\n' "$PROJECT_ROOT/update-future-agenda.sh" "$LOG_FILE" >> "$cron_file"
     printf '0 8 * * * /bin/bash %s >> %s 2>&1\n' "$PROJECT_ROOT/update-futbollibre.sh" "$LOG_FILE" >> "$cron_file"
+    printf '15 2 * * * /bin/bash %s >/dev/null 2>&1\n' "$PROJECT_ROOT/cleanup-runtime.sh" >> "$cron_file"
     crontab "$cron_file"
     rm -f "$cron_file"
     echo "Cron instalado."
+}
+
+install_journald_limits() {
+    command -v systemctl >/dev/null 2>&1 || { echo "systemctl no disponible; límites de journald omitidos."; return; }
+    local dropin="/etc/systemd/journald.conf.d/futbol-libre.conf"
+    "${SUDO[@]}" mkdir -p "$(dirname "$dropin")"
+    cat <<'EOF' | "${SUDO[@]}" tee "$dropin" >/dev/null
+[Journal]
+SystemMaxUse=100M
+SystemMaxFileSize=25M
+RuntimeMaxUse=50M
+MaxRetentionSec=14day
+Compress=yes
+EOF
+    "${SUDO[@]}" systemctl restart systemd-journald
+    echo "Límites de journald instalados."
 }
 
 install_service() {
@@ -183,6 +201,7 @@ EOF
 
 if ask_yes_no "¿Deseás instalar los crones?"; then install_crons; else echo "Cron omitido."; fi
 if ask_yes_no "¿Deseás crear un servicio persistente para el servidor?"; then install_service; else echo "Servicio persistente omitido."; fi
+install_journald_limits
 
 echo
 echo "Instalación completada."
