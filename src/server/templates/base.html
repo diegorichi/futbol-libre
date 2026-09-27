@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fútbol Libre</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='futbol-logo.jpg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
   <nav aria-label="Navegación principal">
-    <img class="site-logo" src="{{ url_for('static', filename='favicon.svg') }}" alt="Fútbol Libre">
+    <img class="site-logo" src="{{ url_for('static', filename='futbol-logo.jpg') }}" alt="Fútbol Libre">
     <a {% if request.endpoint == 'executor_page' %}aria-current="page"{% endif %} href="{{ url_for('executor_page') }}">Actualizar fuentes</a>
     <a {% if request.endpoint == 'channels_page' %}aria-current="page"{% endif %} href="{{ url_for('channels_page') }}">Canales</a>
     <a {% if request.endpoint == 'agenda_page' %}aria-current="page"{% endif %} href="{{ url_for('agenda_page') }}">Agenda</a>

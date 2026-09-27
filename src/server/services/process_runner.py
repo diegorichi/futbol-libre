@@ -17,12 +17,14 @@ class ProcessRunner:
         os.makedirs(os.path.dirname(self.pid_file), exist_ok=True)
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
         self._start_lock = threading.Lock()
+        self._log_start_offset = 0
 
     def start(self, script_name, arguments=None):
         with self._start_lock:
             if self.is_running():
                 return False
             self._clear_log()
+            self._log_start_offset = 0
             if not self.status.start(f"Ejecutando {script_name}..."):
                 return False
             thread = threading.Thread(
@@ -35,6 +37,7 @@ class ProcessRunner:
 
     def recover(self):
         if self.is_running():
+            self._log_start_offset = self._log_size()
             self.status.restore(self.tail_output(), "Actualización detectada en curso.")
 
     def stop(self):
@@ -73,9 +76,19 @@ class ProcessRunner:
     def tail_output(self, max_lines=300):
         try:
             with open(self.log_file, encoding="utf-8", errors="replace") as log_file:
+                log_file.seek(0, 2)
+                if log_file.tell() < self._log_start_offset:
+                    self._log_start_offset = 0
+                log_file.seek(self._log_start_offset)
                 return log_file.readlines()[-max_lines:]
         except FileNotFoundError:
             return []
+
+    def _log_size(self):
+        try:
+            return os.path.getsize(self.log_file)
+        except OSError:
+            return 0
 
     def is_running(self):
         pid = self._read_pid()

@@ -74,7 +74,7 @@ class TvApiContractTest(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn('class="site-logo"', response.text)
-        self.assertIn('href="/static/favicon.svg"', response.text)
+        self.assertIn('href="/static/futbol-logo.jpg"', response.text)
         self.assertIn(">Actualizar fuentes</a>", response.text)
         self.assertNotIn(">Actualizar URL</a>", response.text)
         self.assertIn('href="/tvapp"', response.text)

@@ -9,7 +9,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:banner="@drawable/ic_launcher_foreground"
+        android:banner="@drawable/futbol_logo"
         android:theme="@style/AppTheme"
         android:label="Fútbol TV"
         android:usesCleartextTraffic="true">
